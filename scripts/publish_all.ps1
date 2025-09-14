@@ -1,79 +1,82 @@
 
-<# 
-  publish_all.ps1 — PromptForge (auto seed export + robust git wrapper)
-  One command to export seeds (from DB), format (Ruff), test (pytest), archive, commit, tag, and push.
+<#
+  publish_all.ps1 — PromptForge (final, explicit)
+  - Exports seeds from DB (pf_export_db.ps1)
+  - Runs Ruff format + fix
+  - Runs pytest if tests/ exists
+  - Archives source (archive_source.ps1)
+  - Commits, optional tag, pushes
 
-  Usage examples:
+  Usage:
     pwsh .\scripts\publish_all.ps1 -RepoRoot "G:\My Drive\Code\Python\PromptForge" -Milestone "Baseline" -NewBranch -AutoTag
-    pwsh .\scripts\publish_all.ps1 -RepoRoot "G:\...\PromptForge" -Milestone "update" -SkipArchive
 #>
 
 [CmdletBinding()]
 param(
-  [string]$RepoRoot = "G:\My Drive\Code\Python\PromptForge",
+  [Parameter(Mandatory=$true)][string]$RepoRoot,
   [string]$Remote = "https://github.com/coreyprator/PromptForge.git",
   [string]$Milestone = "Milestone " + (Get-Date).ToString("yyyy-MM-dd HH:mm"),
   [switch]$NewBranch,
   [string]$BranchPrefix = "milestone/promptforge",
   [string]$BranchName,
   [switch]$AutoTag,
-  [string]$TagName,           # if provided, overrides AutoTag naming
+  [string]$TagName,
   [switch]$SkipArchive,
   [string]$ArchiveOutDir = ".\handoff",
   [string]$ArchiveBaseName = "promptforge_handoff",
-  [switch]$SkipSeedExport     # allows bypassing seeds export step
+  [switch]$SkipSeedExport
 )
 
 $ErrorActionPreference = "Stop"
+function Step($m){ Write-Host ("`n== {0}" -f $m) -ForegroundColor Cyan }
 
-function Run-Cmd([string]$Exe, [string[]]$Args) {
-  if (-not $Args) { throw "Internal error: attempted to run '$Exe' with no arguments." }
-  Write-Host ("`n> {0} {1}" -f $Exe, ($Args -join ' ')) -ForegroundColor DarkCyan
-  & $Exe @Args
-  $code = $LASTEXITCODE
-  if ($code -ne 0) { throw "'$Exe' failed with exit code $code" }
-}
-
-function Run-Git([string[]]$Args) { Run-Cmd "git" $Args }
-function Run-Python([string[]]$Args) { Run-Cmd "python" $Args }
+# Preflight
+if (-not (Test-Path -LiteralPath $RepoRoot)) { throw "RepoRoot not found: $RepoRoot" }
+$gitPath = (Get-Command git -ErrorAction SilentlyContinue)?.Source
+$pyPath  = (Get-Command python -ErrorAction SilentlyContinue)?.Source
+if (-not $gitPath) { throw "git not found on PATH" }
+if (-not $pyPath)  { throw "python not found on PATH" }
+Write-Host "git: $gitPath"
+Write-Host "python: $pyPath"
 
 Push-Location $RepoRoot
 try {
-  # Ensure repo exists
+  Step "Ensure Git repo"
   if (-not (Test-Path ".git")) {
-    Run-Git @("init")
+    Write-Host "> git init" -ForegroundColor DarkCyan
+    & git init
   }
 
-  # Ensure remote
-  $remotes = (& git remote) 2>$null
+  Step "Configure 'origin' remote"
+  $remoteList = (& git remote) 2>$null
   $hasOrigin = $false
-  if ($remotes) { $hasOrigin = ($remotes -split "\r?\n") -contains "origin" }
+  if ($remoteList) { $hasOrigin = ($remoteList -split "\r?\n") -contains "origin" }
   if (-not $hasOrigin) {
-    Run-Git @("remote","add","origin",$Remote)
+    Write-Host ("> git remote add origin {0}" -f $Remote) -ForegroundColor DarkCyan
+    & git remote add origin $Remote
   } else {
-    Run-Git @("remote","set-url","origin",$Remote)
+    Write-Host ("> git remote set-url origin {0}" -f $Remote) -ForegroundColor DarkCyan
+    & git remote set-url origin $Remote
   }
 
-  # Branch
+  Step "Select branch"
   if ($NewBranch -or $BranchName) {
-    if (-not $BranchName) {
-      $BranchName = "{0}-{1}" -f $BranchPrefix, (Get-Date).ToString("yyyyMMdd-HHmm")
-    }
-    Run-Git @("checkout","-B",$BranchName)
+    if (-not $BranchName) { $BranchName = "{0}-{1}" -f $BranchPrefix, (Get-Date).ToString("yyyyMMdd-HHmm") }
+    Write-Host ("> git checkout -B {0}" -f $BranchName) -ForegroundColor DarkCyan
+    & git checkout -B $BranchName
   } else {
-    # Ensure on main
-    Run-Git @("checkout","-B","main")
+    Write-Host "> git checkout -B main" -ForegroundColor DarkCyan
+    & git checkout -B main
   }
 
-  # Ensure ruff + pytest
-  try { Run-Python @("-m","ruff","--version") } catch { Run-Python @("-m","pip","install","ruff") }
-  try { Run-Python @("-m","pytest","--version") } catch { Run-Python @("-m","pip","install","pytest") }
+  Step "Ensure ruff/pytest"
+  try { & python -m ruff --version | Out-Null } catch { & python -m pip install ruff }
+  try { & python -m pytest --version | Out-Null } catch { & python -m pip install pytest }
 
-  # Export seeds before formatting/testing
   if (-not $SkipSeedExport) {
+    Step "Export seeds from DB"
     $exportScript = Join-Path $PSScriptRoot "pf_export_db.ps1"
     if (Test-Path -LiteralPath $exportScript) {
-      Write-Host "`n== Exporting seeds from DB ==" -ForegroundColor Cyan
       & $exportScript -RepoRoot $RepoRoot | Write-Host
       if (-not (Test-Path -LiteralPath "seeds")) { New-Item -ItemType Directory -Force -Path "seeds" | Out-Null }
     } else {
@@ -81,19 +84,22 @@ try {
     }
   }
 
-  # RIFF (Ruff format + fix)
-  Run-Python @("-m","ruff","format",".")
-  Run-Python @("-m","ruff","check","--fix",".")
+  Step "Ruff format + fix"
+  Write-Host "> python -m ruff format ." -ForegroundColor DarkCyan
+  & python -m ruff format .
+  Write-Host "> python -m ruff check --fix ." -ForegroundColor DarkCyan
+  & python -m ruff check --fix .
 
-  # Tests
   if (Test-Path -LiteralPath ".\tests") {
-    Run-Python @("-m","pytest","-q")
+    Step "Run pytest"
+    Write-Host "> python -m pytest -q" -ForegroundColor DarkCyan
+    & python -m pytest -q
   } else {
     Write-Host "No tests folder; skipping pytest." -ForegroundColor Yellow
   }
 
-  # Archive (optional)
   if (-not $SkipArchive) {
+    Step "Archive source"
     $archiveScript = Join-Path $PSScriptRoot "archive_source.ps1"
     if (-not (Test-Path -LiteralPath $archiveScript)) { $archiveScript = "scripts\archive_source.ps1" }
     if (Test-Path -LiteralPath $archiveScript) {
@@ -103,19 +109,27 @@ try {
     }
   }
 
-  # Commit + tag + push
-  Run-Git @("add","-A")
-  Run-Git @("commit","-m",$Milestone,"--allow-empty")
+  Step "Commit + (optional) tag + push"
+  Write-Host "> git add -A" -ForegroundColor DarkCyan
+  & git add -A
+  Write-Host ("> git commit -m `"{0}`" --allow-empty" -f $Milestone) -ForegroundColor DarkCyan
+  & git commit -m $Milestone --allow-empty
 
   $doTag = $AutoTag -or $TagName
   if ($doTag) {
     if (-not $TagName) { $TagName = "milestone-" + (Get-Date).ToString("yyyyMMdd-HHmm") }
-    Run-Git @("tag","-a",$TagName,"-m",$Milestone)
+    Write-Host ("> git tag -a {0} -m `"{1}`"" -f $TagName, $Milestone) -ForegroundColor DarkCyan
+    & git tag -a $TagName -m $Milestone
   }
 
   $currentBranch = (& git rev-parse --abbrev-ref HEAD).Trim()
-  Run-Git @("push","-u","origin",$currentBranch)
-  if ($doTag) { Run-Git @("push","origin","--tags") }
+  if (-not $currentBranch) { throw "Could not determine current branch." }
+  Write-Host ("> git push -u origin {0}" -f $currentBranch) -ForegroundColor DarkCyan
+  & git push -u origin $currentBranch
+  if ($doTag) {
+    Write-Host "> git push origin --tags" -ForegroundColor DarkCyan
+    & git push origin --tags
+  }
 
   Write-Host "`n✅ Published: $Milestone" -ForegroundColor Green
   Write-Host ("   Branch: {0}" -f $currentBranch)

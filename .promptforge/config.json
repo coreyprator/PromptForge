@@ -1,0 +1,20 @@
+{
+  "sentinels": {
+    "start": "BEGIN OUTPUT",
+    "end": "END OUTPUT"
+  },
+  "output_contract": {
+    "format": "json",
+    "schema_name": "files_payload"
+  },
+  "scenarios": {
+    "default": {
+      "title": "Default",
+      "system_rules": [
+        "Channel A must be strict JSON matching the schema.",
+        "Never include prose in Channel A.",
+        "Channel B: human-readable notes only, no code."
+      ]
+    }
+  }
+}
