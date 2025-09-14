@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "promptforge-v2"
+version = "0.0.1"
+description = "PromptForge V2 — core+GUI+CLI+bridge with GUI-first E2E"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+pf = "promptforge_cli.__main__:main"
