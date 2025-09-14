@@ -1,0 +1,27 @@
+@'
+# Python / build
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.build/
+dist/
+
+# Virtualenvs
+.venv/
+env/
+venv/
+
+# Project data
+.promptforge/out/
+.promptforge/promptforge.db
+
+# Allow versioned seeds & snapshots
+!seeds/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+'@ | Set-Content -Encoding UTF8 .gitignore

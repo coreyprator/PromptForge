@@ -1,15 +1,11 @@
+
 <# 
-  publish_all.ps1 — PromptForge
-  One command to format (RIFF), test, archive, commit, tag, and push.
+  publish_all.ps1 — PromptForge (auto seed export + robust git wrapper)
+  One command to export seeds (from DB), format (Ruff), test (pytest), archive, commit, tag, and push.
 
-  Requires:
-    - PowerShell 7
-    - Python 3.12 on PATH
-    - git on PATH
-    - ruff + pytest (will be installed if missing)
-
-  Examples:
-    pwsh .\scripts\publish_all.ps1 -RepoRoot "G:\My Drive\Code\Python\PromptForge" -Milestone "V1 milestone snapshot" -AutoTag
+  Usage examples:
+    pwsh .\scripts\publish_all.ps1 -RepoRoot "G:\My Drive\Code\Python\PromptForge" -Milestone "Baseline" -NewBranch -AutoTag
+    pwsh .\scripts\publish_all.ps1 -RepoRoot "G:\...\PromptForge" -Milestone "update" -SkipArchive
 #>
 
 [CmdletBinding()]
@@ -24,25 +20,38 @@ param(
   [string]$TagName,           # if provided, overrides AutoTag naming
   [switch]$SkipArchive,
   [string]$ArchiveOutDir = ".\handoff",
-  [string]$ArchiveBaseName = "promptforge_handoff"
+  [string]$ArchiveBaseName = "promptforge_handoff",
+  [switch]$SkipSeedExport     # allows bypassing seeds export step
 )
 
 $ErrorActionPreference = "Stop"
 
-function Invoke-CLI([string]$Exe, [string[]]$Args) {
+function Run-Cmd([string]$Exe, [string[]]$Args) {
+  if (-not $Args) { throw "Internal error: attempted to run '$Exe' with no arguments." }
   Write-Host ("`n> {0} {1}" -f $Exe, ($Args -join ' ')) -ForegroundColor DarkCyan
-  $p = Start-Process -FilePath $Exe -ArgumentList $Args -NoNewWindow -PassThru -Wait
-  if ($p.ExitCode -ne 0) { throw "`"$Exe`" failed with exit code $($p.ExitCode)" }
+  & $Exe @Args
+  $code = $LASTEXITCODE
+  if ($code -ne 0) { throw "'$Exe' failed with exit code $code" }
 }
+
+function Run-Git([string[]]$Args) { Run-Cmd "git" $Args }
+function Run-Python([string[]]$Args) { Run-Cmd "python" $Args }
 
 Push-Location $RepoRoot
 try {
+  # Ensure repo exists
+  if (-not (Test-Path ".git")) {
+    Run-Git @("init")
+  }
+
   # Ensure remote
-  $hasOrigin = (git remote) -contains "origin"
+  $remotes = (& git remote) 2>$null
+  $hasOrigin = $false
+  if ($remotes) { $hasOrigin = ($remotes -split "\r?\n") -contains "origin" }
   if (-not $hasOrigin) {
-    Invoke-CLI git @("remote","add","origin",$Remote)
+    Run-Git @("remote","add","origin",$Remote)
   } else {
-    Invoke-CLI git @("remote","set-url","origin",$Remote)
+    Run-Git @("remote","set-url","origin",$Remote)
   }
 
   # Branch
@@ -50,56 +59,63 @@ try {
     if (-not $BranchName) {
       $BranchName = "{0}-{1}" -f $BranchPrefix, (Get-Date).ToString("yyyyMMdd-HHmm")
     }
-    Invoke-CLI git @("checkout","-B",$BranchName)
+    Run-Git @("checkout","-B",$BranchName)
   } else {
     # Ensure on main
-    Invoke-CLI git @("checkout","-B","main")
+    Run-Git @("checkout","-B","main")
   }
 
   # Ensure ruff + pytest
-  try { python -m ruff --version | Out-Null } catch { python -m pip install ruff }
-  try { python -m pytest --version | Out-Null } catch { python -m pip install pytest }
+  try { Run-Python @("-m","ruff","--version") } catch { Run-Python @("-m","pip","install","ruff") }
+  try { Run-Python @("-m","pytest","--version") } catch { Run-Python @("-m","pip","install","pytest") }
+
+  # Export seeds before formatting/testing
+  if (-not $SkipSeedExport) {
+    $exportScript = Join-Path $PSScriptRoot "pf_export_db.ps1"
+    if (Test-Path -LiteralPath $exportScript) {
+      Write-Host "`n== Exporting seeds from DB ==" -ForegroundColor Cyan
+      & $exportScript -RepoRoot $RepoRoot | Write-Host
+      if (-not (Test-Path -LiteralPath "seeds")) { New-Item -ItemType Directory -Force -Path "seeds" | Out-Null }
+    } else {
+      Write-Host "Seed export script not found at $exportScript (skipping)" -ForegroundColor Yellow
+    }
+  }
 
   # RIFF (Ruff format + fix)
-  Invoke-CLI python @("-m","ruff","format",".")
-  Invoke-CLI python @("-m","ruff","check","--fix",".")
+  Run-Python @("-m","ruff","format",".")
+  Run-Python @("-m","ruff","check","--fix",".")
 
   # Tests
-  $hasTests = Test-Path -LiteralPath ".\tests"
-  if ($hasTests) {
-    Invoke-CLI python @("-m","pytest","-q")
+  if (Test-Path -LiteralPath ".\tests") {
+    Run-Python @("-m","pytest","-q")
   } else {
     Write-Host "No tests folder; skipping pytest." -ForegroundColor Yellow
   }
 
   # Archive (optional)
   if (-not $SkipArchive) {
-    $archiveScript = Join-Path (Join-Path $PSScriptRoot ".") "archive_source.ps1"
-    if (-not (Test-Path -LiteralPath $archiveScript)) {
-      # fallback if script placed alongside
-      $archiveScript = "archive_source.ps1"
+    $archiveScript = Join-Path $PSScriptRoot "archive_source.ps1"
+    if (-not (Test-Path -LiteralPath $archiveScript)) { $archiveScript = "scripts\archive_source.ps1" }
+    if (Test-Path -LiteralPath $archiveScript) {
+      & $archiveScript -RepoRoot $RepoRoot -OutDir $ArchiveOutDir -BaseName $ArchiveBaseName
+    } else {
+      Write-Host "archive_source.ps1 not found; skipping archive." -ForegroundColor Yellow
     }
-    if (-not (Test-Path -LiteralPath $archiveScript)) {
-      throw "archive_source.ps1 not found near publish_all.ps1"
-    }
-    & $archiveScript -RepoRoot $RepoRoot -OutDir $ArchiveOutDir -BaseName $ArchiveBaseName
   }
 
   # Commit + tag + push
-  Invoke-CLI git @("add","-A")
-  Invoke-CLI git @("commit","-m",$Milestone,"--allow-empty")
+  Run-Git @("add","-A")
+  Run-Git @("commit","-m",$Milestone,"--allow-empty")
 
   $doTag = $AutoTag -or $TagName
   if ($doTag) {
     if (-not $TagName) { $TagName = "milestone-" + (Get-Date).ToString("yyyyMMdd-HHmm") }
-    Invoke-CLI git @("tag","-a",$TagName,"-m",$Milestone)
+    Run-Git @("tag","-a",$TagName,"-m",$Milestone)
   }
 
-  # Push
-  # Determine current branch
   $currentBranch = (& git rev-parse --abbrev-ref HEAD).Trim()
-  Invoke-CLI git @("push","-u","origin",$currentBranch)
-  if ($doTag) { Invoke-CLI git @("push","origin","--tags") }
+  Run-Git @("push","-u","origin",$currentBranch)
+  if ($doTag) { Run-Git @("push","origin","--tags") }
 
   Write-Host "`n✅ Published: $Milestone" -ForegroundColor Green
   Write-Host ("   Branch: {0}" -f $currentBranch)
