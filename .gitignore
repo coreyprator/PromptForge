@@ -27,3 +27,6 @@ venv/
 Thumbs.db
 .vscode/
 '@ | Set-Content -Encoding UTF8 .gitignore
+
+replace.txt
+
