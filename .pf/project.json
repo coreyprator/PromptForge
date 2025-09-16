@@ -1,0 +1,5 @@
+{
+  "src_dir": "v2\\src",
+  "venv_path": "C:\\venvs\\promptforge-v2\\Scripts\\python.exe",
+  "ui": { "entry_module": "promptforge_cli", "args": ["gui"] }
+}

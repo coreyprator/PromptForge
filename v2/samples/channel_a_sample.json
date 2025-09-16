@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "files": [
+    {
+      "path": "tools/prod_ui.py",
+      "language": "python",
+      "op": "write",
+      "encoding": "utf-8",
+      "line_endings": "crlf",
+      "executable": false,
+      "contents": "print('hello from PromptForge')\n"
+    }
+  ],
+  "commands_pwsh": [
+    "$env:PYTHONPATH = \"src\"",
+    ".\\\\.venv\\\\Scripts\\\\python.exe -m portfolio_ai.tools.prod_ui"
+  ],
+  "notes": "Minimal acceptance payload",
+  "compliance": {
+    "os_shell": "Windows11/Pwsh7",
+    "python": "3.12",
+    "odbc": "n/a",
+    "noncompliant": [],
+    "status": "PASS"
+  }
+}

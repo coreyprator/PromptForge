@@ -1,0 +1,20 @@
+{
+  "files": [
+    {
+      "path": "tools/prod_ui.py",
+      "language": "python",
+      "op": "write",
+      "contents": "import sys\nfrom portfolio_ai.tools.prod_ui import main\n\nif __name__ == '__main__':\n    sys.exit(main())"
+    }
+  ],
+  "commands_pwsh": [
+    ".venv\\Scripts\\python.exe -m portfolio_ai.tools.prod_ui"
+  ],
+  "compliance": {
+    "os_shell": "Windows11/Pwsh7",
+    "python": "3.12",
+    "odbc": "18",
+    "noncompliant": [],
+    "status": "PASS"
+  }
+}

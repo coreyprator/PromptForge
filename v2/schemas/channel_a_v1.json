@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://promptforge.local/schema/channel_a/v1.json",
+  "title": "PromptForge Channel-A Payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "files", "compliance"],
+  "properties": {
+    "version": { "type": "string", "const": "1.0" },
+
+    "project_root_hint": {
+      "type": "string",
+      "description": "Optional hint for AI; app ignores for security."
+    },
+
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "language", "op", "contents"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Relative path under project root, Windows-friendly.",
+            "pattern": "^(?![A-Za-z]:)(?!/)(?!\\\\)(?!.*\\.{2}(?:/|\\\\)).+"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language/content type of the file body.",
+            "enum": [
+              "python",
+              "powershell",
+              "tsql",
+              "json",
+              "yaml",
+              "ini",
+              "text",
+              "bat"
+            ]
+          },
+          "op": {
+            "type": "string",
+            "enum": ["write"],
+            "description": "Only full-file writes are allowed (no diffs/patches)."
+          },
+          "encoding": {
+            "type": "string",
+            "enum": ["utf-8"],
+            "default": "utf-8"
+          },
+          "line_endings": {
+            "type": "string",
+            "enum": ["crlf", "lf"],
+            "default": "crlf"
+          },
+          "executable": { "type": "boolean", "default": false },
+
+          "contents": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500000,
+            "description": "Full file contents. Must NOT be a diff/patch."
+          }
+        }
+      }
+    },
+
+    "commands_pwsh": {
+      "type": "array",
+      "description": "Optional PowerShell 7 commands to run (previewed, not auto-run).",
+      "items": { "type": "string", "minLength": 1 }
+    },
+
+    "notes": { "type": "string" },
+
+    "compliance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["os_shell", "python", "odbc", "noncompliant", "status"],
+      "properties": {
+        "os_shell": { "type": "string", "const": "Windows11/Pwsh7" },
+        "python":   { "type": "string", "const": "3.12" },
+        "odbc":     { "type": "string", "enum": ["18", "n/a"] },
+        "noncompliant": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "status": { "type": "string", "enum": ["PASS", "FAIL"] }
+      }
+    }
+  }
+}

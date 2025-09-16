@@ -1,0 +1,29 @@
+{
+  "files": [
+    {
+      "path": "v2/src/promptforge_gui/actions.py",
+      "language": "python",
+      "op": "write",
+      "contents": "from __future__ import annotations\nimport subprocess, pathlib\n\nPWSH = \"pwsh\"\n\n# All helpers return either a Popen handle (for run_ui) or (rc, stdout, stderr)\n\ndef _pwsh_args():\n    return [PWSH, \"-NoProfile\", \"-ExecutionPolicy\", \"Bypass\"]\n\n\ndef run_ui(project_root: str):\n    root = pathlib.Path(project_root).resolve()\n    # Prefer tools\\run_ui.ps1 in the target project; else fall back to PF shim\n    candidate = root / \"tools\" / \"run_ui.ps1\"\n    if candidate.exists():\n        cmd = _pwsh_args() + [\"-File\", str(candidate)]\n    else:\n        shim = root / \"v2\" / \"scripts\" / \"run_ui_here.ps1\"\n        cmd = _pwsh_args() + [\"-File\", str(shim), \"-ProjectRoot\", str(root)]\n    return subprocess.Popen(cmd)\n\n\ndef apply_payload(project_root: str, payload_path: str):\n    root = pathlib.Path(project_root).resolve()\n    payload = pathlib.Path(payload_path).resolve()\n    tool = root / \"v2\" / \"scripts\" / \"apply_payload.ps1\"\n    cmd = _pwsh_args() + [\n        \"-File\", str(tool),\n        \"-PayloadPath\", str(payload),\n        \"-ProjectRoot\", str(root),\n    ]\n    cp = subprocess.run(cmd, capture_output=True, text=True)\n    return cp.returncode, cp.stdout, cp.stderr\n\n\ndef undo_last(project_root: str):\n    root = pathlib.Path(project_root).resolve()\n    tool = root / \"v2\" / \"scripts\" / \"undo_last_apply.ps1\"\n    cmd = _pwsh_args() + [\"-File\", str(tool), \"-ProjectRoot\", str(root)]\n    cp = subprocess.run(cmd, capture_output=True, text=True)\n    return cp.returncode, cp.stdout, cp.stderr\n"
+    },
+    {
+      "path": "v2/scripts/run_ui_here.ps1",
+      "language": "powershell",
+      "op": "write",
+      "contents": "param([Parameter(Mandatory=$true)][string]$ProjectRoot)\nPush-Location $ProjectRoot\ntry { pwsh -NoProfile -ExecutionPolicy Bypass -Command \"run_ui\" }\nfinally { Pop-Location }\n"
+    },
+    {
+      "path": "v2/docs/INTEGRATE_GUI_BUTTONS.md",
+      "language": "text",
+      "op": "write",
+      "contents": "# Integrate three buttons into the PF GUI (V2.2)\n\nThis adds **Run UI / Apply / Undo** without changing business logic.\n\n## 1) Import helpers in app.py\n```python\n# near other imports in v2/src/promptforge_gui/app.py\nfrom promptforge_gui.actions import run_ui as pf_run_ui, apply_payload as pf_apply, undo_last as pf_undo\n```\n\n## 2) Add three buttons to your toolbar/panel\nWhere you build the main actions row (Tkinter):\n```python\nimport tkinter as tk\n...\nbtn_run = tk.Button(actions_frame, text=\"Run UI\", command=self._on_run_ui)\nbtn_apply = tk.Button(actions_frame, text=\"Apply Payload\", command=self._on_apply)\nbtn_undo = tk.Button(actions_frame, text=\"Undo Last Apply\", command=self._on_undo)\nfor b in (btn_run, btn_apply, btn_undo):\n    b.pack(side=tk.LEFT, padx=4)\n```\n\n## 3) Hook up handlers in your App class\nAssumes you already track `self.project_root` and the review JSON path `self.last_files_json_path`.\n```python\ndef _on_run_ui(self):\n    try:\n        pf_run_ui(self.project_root)\n        self._log_info(\"Run UI launched\")\n    except Exception as e:\n        self._log_error(f\"Run UI failed: {e}\")\n\ndef _on_apply(self):\n    if not getattr(self, \"last_files_json_path\", None):\n        return self._log_error(\"No payload JSON to apply. Call Model (A) first.\")\n    rc, out, err = pf_apply(self.project_root, self.last_files_json_path)\n    self._log_info(out.strip())\n    if rc != 0:\n        self._log_error(err.strip() or \"Apply failed\")\n\ndef _on_undo(self):\n    rc, out, err = pf_undo(self.project_root)\n    self._log_info(out.strip())\n    if rc != 0:\n        self._log_error(err.strip() or \"Undo failed\")\n```\n\n> Note: If your app currently doesn’t persist `self.last_files_json_path`, save the latest **Review** JSON to a temp file whenever Call Model (A) succeeds (you already had code printing the parsed summary). Store that path on `self` so **Apply** knows where to read from.\n\n## 4) Windows-only assumption\nThese helpers shell to **pwsh**. That matches our Sprint constraints (Windows 11 + PowerShell 7).\n"
+    }
+  ],
+  "compliance": {
+    "os_shell": "Windows11/Pwsh7",
+    "python": "3.12",
+    "odbc": "n/a",
+    "noncompliant": [],
+    "status": "PASS"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "files": [
+    {
+      "path": ".pf/project.json",
+      "language": "json",
+      "op": "write",
+      "contents": "{\n  \"src_dir\": \"v2\\\\src\",\n  \"venv_path\": \"C:\\\\venvs\\\\promptforge-v2\\\\Scripts\\\\python.exe\",\n  \"ui\": { \"entry_module\": \"promptforge_cli\", \"args\": [\"gui\"] }\n}\n"
+    },
+    {
+      "path": "tools/run_ui.ps1",
+      "language": "powershell",
+      "op": "write",
+      "contents": "param(\n  [string]$Py = \"\",\n  [string]$Module = \"\",\n  [string[]]$Args\n)\n\n$root = Resolve-Path (Join-Path $PSScriptRoot \".\")\n$configPath = Join-Path $root \".pf\\project.json\"\n$config = $null\nif (Test-Path $configPath) { $config = Get-Content -Raw $configPath | ConvertFrom-Json }\n\n$src   = if ($config -and $config.src_dir) { $config.src_dir } else { \"src\" }\n$entry = if ($Module) { $Module } elseif ($config -and $config.ui.entry_module) { $config.ui.entry_module } else { \"app\" }\n$cfgArgs = @()\nif ($config -and $config.ui -and $config.ui.args) { $cfgArgs = @($config.ui.args) }\n\n# Choose Python\nif ($Py) {\n  $python = $Py\n} elseif ($config -and $config.venv_path -and (Test-Path $config.venv_path)) {\n  $python = (Resolve-Path $config.venv_path).Path\n} elseif (Test-Path (Join-Path $root \".venv\\Scripts\\python.exe\")) {\n  $python = (Resolve-Path (Join-Path $root \".venv\\Scripts\\python.exe\")).Path\n} else {\n  $python = \"py\"\n}\n\n$env:PYTHONPATH = (Resolve-Path (Join-Path $root $src)).Path\nWrite-Host (\"Running: {0} -m {1} {2}\" -f $python, $entry, (($cfgArgs + $Args) -join ' ')) -ForegroundColor Cyan\n\nif ($python -eq \"py\") {\n  & py -3.12 -m $entry @cfgArgs @Args\n} else {\n  & $python -m $entry @cfgArgs @Args\n}\n\nexit $LASTEXITCODE\n"
+    }
+  ],
+  "compliance": {
+    "os_shell": "Windows11/Pwsh7",
+    "python": "3.12",
+    "odbc": "n/a",
+    "noncompliant": [],
+    "status": "PASS"
+  }
+}
