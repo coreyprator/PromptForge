@@ -52,6 +52,26 @@ class App(ttk.Frame):
 
         self._refresh_tabs()
 
+        # Theme/State/Banner integration (add at end of App.__init__)
+        try:
+            from pf.state_theme import (
+                apply_theme_from_config,
+                show_project_color_badge,
+                stamp_title_with_time,
+                wire_scenario_persistence,
+                wire_project_auto_open
+            )
+            # Apply all enhancements
+            apply_theme_from_config(self)
+            show_project_color_badge(self)
+            stamp_title_with_time(self)
+            wire_scenario_persistence(self)
+            wire_project_auto_open(self)
+        except ImportError:
+            pass
+        except Exception:
+            pass
+
     # ---------- HELP ----------
     def _init_tab_help(self):
         tab = ttk.Frame(self.nb, padding=8); self.nb.add(tab, text="Help")

@@ -70,6 +70,28 @@ class App(tk.Tk):
         self._log("Project root: " + str(self.project_root))
         self._prose("Config loaded from .pf/project.json (if present). Auto-retry: " + ("on" if self.auto_retry else "off"))
 
+# Theme/State/Banner integration
+        try:
+            from pf.state_theme import (
+                apply_theme_from_config,
+                show_project_color_badge,
+                stamp_title_with_time,
+                wire_scenario_persistence,
+                wire_project_auto_open
+            )
+            
+            # Apply all enhancements
+            apply_theme_from_config(self)
+            show_project_color_badge(self)
+            stamp_title_with_time(self)
+            wire_scenario_persistence(self)
+            wire_project_auto_open(self)
+            
+        except ImportError:
+            pass
+        except Exception:
+            pass
+
     # ---- project ----
     def _set_project_root(self, new_root: Path) -> None:
         new_root = new_root.resolve()
@@ -356,43 +378,4 @@ class App(tk.Tk):
             self._log(f"[{name}] FAIL ({rc})"); 
             if out.strip(): self._log(out.strip()); 
             if err.strip(): self._log(err.strip()); messagebox.showerror("Scenario", f"{name}: FAIL — see Errors panel")
-
-# PF_SENTINEL_END
-
-
-
-
-
-
-
-
-
-# --- PF: install UI hooks (safe no-op if not applicable) ---
-try:
-    install_app_hooks(App)
-except Exception:
-    try:
-        install_app_hooks(Application)  # alternate class name, if used
-    except Exception:
-        pass
-
-
-
-
-
-# --- PF theme/hooks (guarded) ---
-try:
-    try:
-        _pf_install_hooks(App)  # type: ignore[name-defined]
-    except Exception:  # noqa: BLE001
-        try:
-            _pf_install_hooks(Application)  # type: ignore[name-defined]
-        except Exception:  # noqa: BLE001
-            pass
-except Exception:  # noqa: BLE001
-    pass
-
-
-
-
 

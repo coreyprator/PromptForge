@@ -26,6 +26,7 @@ venv/
 .DS_Store
 Thumbs.db
 .vscode/
+'*.gdoc'
 '@ | Set-Content -Encoding UTF8 .gitignore
 
 replace.txt
