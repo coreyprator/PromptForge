@@ -1,0 +1,4 @@
+
+$src = Get-Content -Raw $ui
+$src = $src -replace '(?m)^from pf.state_theme import .*\r?\n',''
+

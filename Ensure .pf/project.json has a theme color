@@ -1,0 +1,9 @@
+
+$pj = '..pf\project.json'
+$cfg = @{}
+if (Test-Path $pj) { try { $cfg = Get-Content -Raw $pj | ConvertFrom-Json -AsHashtable } catch { $cfg = @{} } }
+if (-not $cfg.ContainsKey('theme_color')) { $cfg['theme_color'] = '#880000' }
+New-Item -ItemType Directory -Force -Path ..pf | Out-Null
+($cfg | ConvertTo-Json -Depth 10) | Set-Content -Encoding utf8NoBOM $pj
+Write-Host ("theme_color: " + $cfg['theme_color'])
+

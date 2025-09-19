@@ -1,0 +1,5 @@
+
+$sha = (Get-FileHash -Algorithm SHA256 .\pf\state_theme.py).Hash
+Write-Host ("pf/state_theme.py SHA256: " + $sha)
+
+ENDRUN

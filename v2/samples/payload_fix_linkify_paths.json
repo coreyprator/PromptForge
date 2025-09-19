@@ -1,0 +1,10 @@
+{
+  "files": [
+    {
+      "path": "v2/scripts/scenario_fix_linkify_paths.ps1",
+      "language": "powershell",
+      "op": "write",
+      "contents": "[CmdletBinding()]\nparam([string]$ProjectRoot)\nSet-StrictMode -Version Latest\n$ErrorActionPreference = 'Stop'\n\nif ($PSBoundParameters.ContainsKey('ProjectRoot') -and $ProjectRoot) { Set-Location -LiteralPath $ProjectRoot }\n\n$utils = Join-Path (Get-Location) 'pf\\utils.py'\nif (-not (Test-Path -LiteralPath $utils)) { throw \"Not found: $utils\" }\n\n$src = Get-Content -LiteralPath $utils -Raw -Encoding UTF8\n$pattern = 'PATH_RE\\s*=\\s*re\\.compile\\([^)]*\\)'\n$replacement = 'PATH_RE = re.compile(r\"((?:[A-Za-z]:[\\\\/]|\\\\\\\\[^\\s/\\\\:*?\\\"<>|]+[\\\\/]|/)[^\\r\\n]+)\")'\n$dst = [regex]::Replace($src, $pattern, $replacement)\n\nif ($dst -ne $src) {\n  Set-Content -Encoding utf8NoBOM -LiteralPath $utils -Value $dst\n  Write-Host \"Patched PATH_RE in $utils\"\n} else {\n  Write-Host \"No change (already patched?)\"\n}\n"
+    }
+  ]
+}

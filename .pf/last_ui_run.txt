@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "G:\My Drive\Code\Python\PromptForge\app.py", line 1, in <module>
+    from pf.ui_app import App
+  File "G:\My Drive\Code\Python\PromptForge\pf\ui_app.py", line 2, in <module>
+    from pf.state_theme import apply_theme_from_config, show_project_color_badge, enable_scenario_persistence, hook_project_dropdown
+ImportError: cannot import name 'enable_scenario_persistence' from 'pf.state_theme' (G:\My Drive\Code\Python\PromptForge\pf\state_theme.py)

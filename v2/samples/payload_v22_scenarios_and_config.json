@@ -1,0 +1,40 @@
+{
+  "files": [
+    {
+      "path": "v2/scripts/scenario_setup_run_ui.ps1",
+      "language": "powershell",
+      "op": "write",
+      "contents": "[CmdletBinding()]\nparam([string]$ProjectRoot)\nSet-StrictMode -Version Latest\n$ErrorActionPreference = 'Stop'\nif ($ProjectRoot) { Set-Location -LiteralPath $ProjectRoot }\n$py = $env:PF_PY\nif (-not $py) { $py = (Get-Command py -ErrorAction SilentlyContinue)?.Source }\nif (-not $py) { $py = (Get-Command python -ErrorAction SilentlyContinue)?.Source }\nif (-not $py) { throw 'Python not found. Set PF_PY or install Python 3.12+' }\nWrite-Host \"Launching: $py app.py\"\n& $py -3.12 .\\app.py 2>$null\nif ($LASTEXITCODE -ne 0) { & $py .\\app.py }\nWrite-Host \"GUI exit code: $LASTEXITCODE\"\nexit 0\n"
+    },
+    {
+      "path": "v2/scripts/scenario_venv_validate.ps1",
+      "language": "powershell",
+      "op": "write",
+      "contents": "[CmdletBinding()]\nparam([string]$ProjectRoot)\nSet-StrictMode -Version Latest\n$ErrorActionPreference = 'Stop'\nif ($ProjectRoot) { Set-Location -LiteralPath $ProjectRoot }\n$errors = @()\n\n# Python\n$pyver = & py -3.12 -c \"import sys;print(sys.version.split()[0])\" 2>$null\nif (-not $pyver) { $errors += 'Python 3.12 not found (py -3.12).'; } else { Write-Host \"Python: $pyver\" }\n\n# ruff\n$ruff = Get-Command ruff -ErrorAction SilentlyContinue\nif (-not $ruff) { $errors += 'ruff not on PATH. Try: py -3.12 -m pip install -U ruff' } else { Write-Host (ruff --version 2>$null) }\n\n# PSScriptAnalyzer\n$isa = Get-Command Invoke-ScriptAnalyzer -ErrorAction SilentlyContinue\nif (-not $isa) { $errors += 'PSScriptAnalyzer missing. Install: Install-Module PSScriptAnalyzer -Scope CurrentUser -Force' } else { Write-Host 'PSScriptAnalyzer: OK' }\n\n# pytest (optional)\n$pytest = & py -3.12 -m pytest --version 2>$null\nif (-not $pytest) { Write-Host 'pytest not found (optional).' } else { Write-Host $pytest }\n\nif ($errors.Count) {\n  Write-Host 'Validation: FAIL' -ForegroundColor Red\n  $errors | ForEach-Object { Write-Host \" - $_\" -ForegroundColor Red }\n  exit 1\n}\nWrite-Host 'Validation: PASS' -ForegroundColor Green\nexit 0\n"
+    },
+    {
+      "path": "v2/scripts/scenario_tool_commands.ps1",
+      "language": "powershell",
+      "op": "write",
+      "contents": "[CmdletBinding()]\nparam([string]$ProjectRoot)\nSet-StrictMode -Version Latest\n$ErrorActionPreference = 'Stop'\nif ($ProjectRoot) { Set-Location -LiteralPath $ProjectRoot }\n$py = (Get-Command py -ErrorAction SilentlyContinue)?.Source\nif (-not $py) { $py = (Get-Command python -ErrorAction SilentlyContinue)?.Source }\nWrite-Host 'fix_channel_a.py --help'\n& $py -3.12 v2/tools/fix_channel_a.py -h 2>&1 | Write-Output\nexit $LASTEXITCODE\n"
+    },
+    {
+      "path": "v2/scripts/scenario_test_and_lint.ps1",
+      "language": "powershell",
+      "op": "write",
+      "contents": "[CmdletBinding()]\nparam([string]$ProjectRoot)\nSet-StrictMode -Version Latest\n$ErrorActionPreference = 'Stop'\nif ($ProjectRoot) { Set-Location -LiteralPath $ProjectRoot }\n$failed = $false\n\nif (Get-Command ruff -ErrorAction SilentlyContinue) {\n  Write-Host 'Running ruff check ...'\n  ruff check . | Write-Output\n  if ($LASTEXITCODE -ne 0) { $failed = $true }\n} else { Write-Host 'ruff not found; skipping' }\n\n$hasTests = Test-Path -LiteralPath '.\\tests'\nif ($hasTests) {\n  Write-Host 'Running pytest -q ...'\n  py -3.12 -m pytest -q\n  if ($LASTEXITCODE -ne 0) { $failed = $true }\n} else { Write-Host 'No tests/ folder; skipping pytest' }\n\nif ($failed) { exit 1 } else { exit 0 }\n"
+    },
+    {
+      "path": "v2/scripts/scenario_git_publish.ps1",
+      "language": "powershell",
+      "op": "write",
+      "contents": "[CmdletBinding()]\nparam([string]$ProjectRoot)\nSet-StrictMode -Version Latest\n$ErrorActionPreference = 'Stop'\nif ($ProjectRoot) { Set-Location -LiteralPath $ProjectRoot }\nif (-not (Get-Command git -ErrorAction SilentlyContinue)) { Write-Host 'git not found'; exit 1 }\nWrite-Host 'Git status:'\ngit status --porcelain=v1 -b\nWrite-Host ''\nWrite-Host 'Dry-run. To publish:'\nWrite-Host '  git add -A'\nWrite-Host '  git commit -m \"pf: apply changes\"'\nWrite-Host '  git push'\nexit 0\n"
+    },
+    {
+      "path": ".pf/project.json",
+      "language": "json",
+      "op": "write",
+      "contents": "{\n  \"version\": \"2.2\",\n  \"retry_policy\": { \"auto_retries\": 1, \"manual_retry\": true },\n  \"undo\": { \"mode\": \"history\" },\n  \"scenarios\": {\n    \"system\": [\n      \"setup_run_ui\",\n      \"venv_validate\",\n      \"standard_test_and_lint\",\n      \"tool_commands\",\n      \"standard_git_publish\"\n    ]\n  }\n}\n"
+    }
+  ]
+}

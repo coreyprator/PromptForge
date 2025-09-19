@@ -1,0 +1,17 @@
+{
+  "files": [
+    {
+      "path": "tools/wont_write.txt",
+      "language": "text",
+      "op": "write",
+      "contents": "\n"
+    }
+  ],
+  "compliance": {
+    "os_shell": "Windows11/Pwsh7",
+    "python": "3.12",
+    "odbc": "n/a",
+    "noncompliant": [],
+    "status": "FAIL"
+  }
+}

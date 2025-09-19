@@ -1,5 +1,22 @@
 {
-  "src_dir": "v2\\src",
-  "venv_path": "C:\\venvs\\promptforge-v2\\Scripts\\python.exe",
-  "ui": { "entry_module": "promptforge_cli", "args": ["gui"] }
+  "version": "2.2",
+  "retry_policy": {
+    "auto_retries": 1,
+    "manual_retry": true
+  },
+  "undo": {
+    "mode": "history"
+  },
+  "scenarios": {
+    "system": [
+      "app_selfcheck",
+      "install_gui_from_sample",
+      "run_ui_here",
+      "venv_validate",
+      "standard_test_and_lint",
+      "tool_commands",
+      "standard_git_publish"
+    ]
+  },
+  "theme_color": "#880000"
 }

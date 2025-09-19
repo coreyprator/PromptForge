@@ -1,0 +1,6 @@
+{
+  "precheck": ["app_selfcheck"],
+  "workdir": ".",
+  "env": {},
+  "command": { "type": "python", "args": ["-X", "utf8", "./app.py"] }
+}

@@ -1,0 +1,31 @@
+{
+  "files": [
+    {
+      "path": "pf/compliance_gate_t2.py",
+      "language": "python",
+      "op": "write",
+      "contents": "<PUT THE compliance_gate_t2.py FROM ABOVE HERE>"
+    },
+    {
+      "path": "pf/change_journal.py",
+      "language": "python",
+      "op": "write",
+      "contents": "<PUT THE change_journal.py FROM ABOVE HERE>"
+    },
+    {
+      "path": "app.py",
+      "language": "python",
+      "op": "patch",
+      "contents": "# === Minimal safe patch ===\nimport json, pathlib\nfrom pf.compliance_gate_t2 import validate as gate_t2_validate\nfrom pf.change_journal import prepare_ops_for_apply, record_apply, undo_last\n\n# 1) Add three buttons to your existing layout (pseudo-code for your UI toolkit)\n# toolbar.add_button('Run UI', on_run_ui_click)\n# toolbar.add_button('Apply',  on_apply_click, enabled=False)  # enabled after SCHEMA PASS\n# toolbar.add_button('Undo',   on_undo_click)\n\nstate = {\"schema_pass\": False}\n\ndef on_schema_valid_pass():\n    state[\"schema_pass\"] = True\n    # ui.enable('Apply', True)\n\ndef on_run_ui_click():\n    # Call system scenario (setup_run_ui)\n    # scenario runner will look up v2/scripts/scenario_setup_run_ui.ps1\n    pass\n\ndef on_apply_click():\n    # 1) Pull prepared Channel-A payload from the Parsed panel\n    payload = get_channel_a_payload_from_ui()  # implement according to your app\n\n    # 2) Tier-2 Compliance\n    result = gate_t2_validate(payload)\n    if not result.get(\"pass\"):\n        show_errors_in_ui(result.get(\"errors\", []))\n        return\n\n    # 3) Apply with journal\n    project_root = pathlib.Path(get_current_project_root())\n    ops = prepare_ops_for_apply(project_root, payload.get(\"files\", []))\n    for f in payload.get(\"files\", []):\n        apply_file(project_root, f)  # your existing write/patch logic\n    record_apply(project_root, ops)\n    show_info(\"Apply complete.\")\n\ndef on_undo_click():\n    project_root = pathlib.Path(get_current_project_root())\n    res = undo_last(project_root)\n    if not res.get(\"ok\"):\n        show_errors_in_ui([res.get(\"message\")])\n    else:\n        show_info(res.get(\"message\"))\n"
+    }
+  ],
+  "compliance": {
+    "os_shell": "Windows11/Pwsh7",
+    "python": "3.12",
+    "psscriptanalyzer": "1.24.0",
+    "ruff": "present",
+    "pytest": "present",
+    "noncompliant": [],
+    "status": "PASS"
+  }
+}

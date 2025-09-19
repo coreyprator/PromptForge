@@ -1,0 +1,31 @@
+
+$footer = @"
+
+--- PF theme/hooks (guarded) ---
+
+try:
+from pf.state_theme import install_app_hooks # single entry point
+except Exception:
+install_app_hooks = None
+try:
+if install_app_hooks:
+install_app_hooks(App)
+except Exception:
+try:
+install_app_hooks(Application)
+except Exception:
+pass
+"@
+
+if ($src -notmatch 'install_app_hooks
+𝐴
+𝑝
+𝑝
+App') {
+$src = $src + "rn" + $footer
+Set-Content -Encoding utf8NoBOM $ui $src
+Write-Host "Patched: $ui"
+} else {
+Write-Host "Already patched: $ui"
+}
+

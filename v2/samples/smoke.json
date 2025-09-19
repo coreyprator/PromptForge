@@ -1,0 +1,16 @@
+{
+  "files": [
+    {
+      "path": "tools/test_ok.ps1",
+      "language": "powershell",
+      "op": "write",
+      "contents": "Write-Host \"OK\""
+    },
+    {
+      "path": "src/test_ok.py",
+      "language": "python",
+      "op": "write",
+      "contents": "print(\"ok\")"
+    }
+  ]
+}
