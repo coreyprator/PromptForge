@@ -1,6 +1,5 @@
 import hashlib, json, os, shutil, subprocess, tempfile, webbrowser
 from pathlib import Path
-from datetime import datetime
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
@@ -14,17 +13,11 @@ class App(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title("PromptForge — V2.2 Test Rig"); self.geometry("1320x940")
-        
-        # Load persistent state first
-        self._load_persistent_state()
-        
-        # Try to restore last project, fallback to current directory
-        if not self._restore_initial_project():
-            self.project_root: Path = Path.cwd()
-            self.scripts_dir = self.project_root / "v2" / "scripts"
-            self.tools_dir   = self.project_root / "v2" / "tools"
-            self.config_data = load_project_config(self.project_root)
-        
+        # project state
+        self.project_root: Path = Path.cwd()
+        self.scripts_dir = self.project_root / "v2" / "scripts"
+        self.tools_dir   = self.project_root / "v2" / "tools"
+        self.config_data = load_project_config(self.project_root)
         reg = load_registry()
         if str(self.project_root) not in reg:
             reg.insert(0, str(self.project_root)); save_registry(reg)
@@ -50,7 +43,6 @@ class App(tk.Tk):
         self.scenario_var = tk.StringVar(value="")
         self.scenario_combo = ttk.Combobox(tb1, textvariable=self.scenario_var, width=32)
         self._refresh_scenarios(); self.scenario_combo.pack(side="left", padx=(4,6))
-        self.scenario_combo.bind("<<ComboboxSelected>>", lambda e: self._on_scenario_selected())
         tk.Button(tb1, text="Run Scenario", command=self.run_scenario).pack(side="left", padx=6)
 
         # row 2: Channel-A actions
@@ -134,96 +126,6 @@ class App(tk.Tk):
             import traceback
             traceback.print_exc()
 
-    def _load_persistent_state(self):
-        """Load persistent state for project and scenario."""
-        self._persistent_state = {}
-        
-        # Look for global state file
-        try:
-            global_state_file = Path.cwd() / ".pf" / "global_state.json"
-            if global_state_file.exists():
-                with open(global_state_file, 'r', encoding='utf-8') as f:
-                    self._persistent_state = json.load(f)
-                print(f"STARTUP: Loaded persistent state from {global_state_file}")
-        except Exception as e:
-            print(f"STARTUP: Failed to load persistent state: {e}")
-            self._persistent_state = {}
-    
-    def _save_persistent_state(self):
-        """Save current state to persistent storage."""
-        try:
-            # Ensure .pf directory exists
-            pf_dir = self.project_root / ".pf"
-            pf_dir.mkdir(exist_ok=True)
-            
-            # Save to global state file - use per-project scenario tracking
-            global_state_file = pf_dir / "global_state.json"
-            
-            # Load existing state to preserve per-project scenarios
-            existing_state = {}
-            if global_state_file.exists():
-                try:
-                    with open(global_state_file, 'r', encoding='utf-8') as f:
-                        existing_state = json.load(f)
-                except:
-                    pass
-            
-            # Update with current project scenario
-            project_scenarios = existing_state.get('project_scenarios', {})
-            project_scenarios[str(self.project_root)] = self.scenario_var.get()
-            
-            state_data = {
-                'last_project': str(self.project_root),
-                'last_scenario': self.scenario_var.get(),
-                'project_scenarios': project_scenarios,
-                'timestamp': datetime.now().isoformat()
-            }
-            
-            with open(global_state_file, 'w', encoding='utf-8') as f:
-                json.dump(state_data, f, indent=2, ensure_ascii=False)
-            
-            print(f"PERSISTENCE: Saved state - Project: {state_data['last_project']}, Scenario: {state_data['last_scenario']}")
-            
-        except Exception as e:
-            print(f"PERSISTENCE: Failed to save state: {e}")
-    
-    def _restore_initial_project(self):
-        """Restore the last used project on startup."""
-        saved_project = self._persistent_state.get('last_project')
-        if saved_project:
-            saved_path = Path(saved_project)
-            if saved_path.exists() and (saved_path / ".pf").exists():
-                print(f"STARTUP: Restoring last project: {saved_path}")
-                # Update project_root without triggering full reload
-                self.project_root = saved_path
-                self.scripts_dir = self.project_root / "v2" / "scripts"
-                self.tools_dir = self.project_root / "v2" / "tools"
-                self.config_data = load_project_config(self.project_root)
-                self.auto_retry = bool(self.config_data.get("retry_policy",{}).get("auto_retries",1))
-                return True
-        return False
-    
-    def _restore_scenario_selection(self):
-        """Restore the last selected scenario for the current project."""
-        # Get project-specific scenario
-        project_scenarios = self._persistent_state.get('project_scenarios', {})
-        saved_scenario = project_scenarios.get(str(self.project_root))
-        
-        if saved_scenario:
-            # Check if the scenario exists in current project
-            current_scenarios = list(self.scenario_combo['values'])
-            if saved_scenario in current_scenarios:
-                self.scenario_var.set(saved_scenario)
-                print(f"STARTUP: Restored scenario for {self.project_root.name}: {saved_scenario}")
-            else:
-                print(f"STARTUP: Scenario '{saved_scenario}' not available in project {self.project_root.name}")
-        else:
-            print(f"STARTUP: No saved scenario for project {self.project_root.name}")
-
-    def _on_scenario_selected(self):
-        """Handle scenario selection and save state."""
-        self._save_persistent_state()
-
     # ---- project ----
     def _set_project_root(self, new_root: Path) -> None:
         new_root = new_root.resolve()
@@ -236,8 +138,6 @@ class App(tk.Tk):
         self.auto_retry   = bool(self.config_data.get("retry_policy",{}).get("auto_retries",1))
         self._refresh_scenarios(); self._log("Switched project → "+str(self.project_root))
         self._prose("Project changed. Auto-retry: "+("on" if self.auto_retry else "off"))
-        # Save state after project change
-        self._save_persistent_state()
 
     def _refresh_projects_combo(self) -> None:
         reg = load_registry()
@@ -352,23 +252,8 @@ class App(tk.Tk):
 
     # ---- scenarios ----
     def _refresh_scenarios(self) -> None:
-        # Use consistent scenario list across all projects to avoid confusion
-        # Start with a standardized list
-        standard_scenarios = [
-            "app_selfcheck",
-            "venv_validate", 
-            "setup_run_ui",
-            "apply_freeform_paste_clipboard_run",
-            "standard_test_and_lint",
-            "tool_commands",
-            "standard_git_publish"
-        ]
-        
-        # Get project-specific scenarios from config
         sys_list = list(self.config_data.get("scenarios",{}).get("system",[]))
         proj_list = list(self.config_data.get("scenarios",{}).get("project",[]))
-        
-        # Discover additional scenarios from scripts directory
         discovered = []
         try:
             if self.scripts_dir.exists():
@@ -377,26 +262,10 @@ class App(tk.Tk):
                     discovered.append(name)
         except Exception:
             pass
-        
-        # Combine all scenarios: standard + system + project + discovered, removing duplicates
-        all_scenarios = []
-        for scenario_list in [standard_scenarios, sys_list, proj_list, discovered]:
-            for scenario in scenario_list:
-                if scenario not in all_scenarios:
-                    all_scenarios.append(scenario)
-        
-        # Fallback to standard list if nothing found
-        if not all_scenarios:
-            all_scenarios = standard_scenarios
-            
-        self.scenario_combo["values"] = all_scenarios
-        
-        # Set default to first scenario if none selected
-        if not self.scenario_var.get() and all_scenarios:
-            self.scenario_var.set(all_scenarios[0])
-        
-        # Always try to restore scenario for current project (not just on startup)
-        self._restore_scenario_selection()
+        names = sys_list + [n for n in proj_list if n not in sys_list] + [n for n in discovered if n not in sys_list and n not in proj_list]
+        if not names:
+            names = ["setup_run_ui","venv_validate","standard_test_and_lint","tool_commands","standard_git_publish"]
+        self.scenario_combo["values"] = names; self.scenario_var.set(names[0])
 
     def _scenario_script_for(self, name: str) -> Path: return self.scripts_dir / f"scenario_{name}.ps1"
 
