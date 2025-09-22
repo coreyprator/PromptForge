@@ -56,8 +56,8 @@ if (-not $changes) {
 
 # Show what will be committed
 Write-Host ""
-Invoke-GitCommand "diff --name-status --cached" "Staged Changes"
-if ($LASTEXITCODE -ne 0) {
+$stagedOutput = Invoke-GitCommand "diff --name-status --cached" "Staged Changes"
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($stagedOutput)) {
     Write-Host "No staged changes. Staging all changes..." -ForegroundColor Yellow
 }
 
@@ -74,11 +74,25 @@ $commitMessage = "pf: apply changes - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 Write-Host ""
 $commitResult = Invoke-GitCommand "commit -m `"$commitMessage`"" "Committing Changes"
 
-# Extract commit hash from commit output
+# Extract commit hash from commit output - FIXED VERSION
 $commitHash = ""
-if ($commitResult -match '\[.*?\s+([a-f0-9]+)\]') {
-    $commitHash = $matches[1]
-    Write-Host "Commit Hash: $commitHash" -ForegroundColor Green
+if ($commitResult) {
+    $commitResultString = $commitResult -join "`n"
+    # Look for patterns like [branch 1a151c5] or [branch abcd123]
+    if ($commitResultString -match '\[(.*?)\s+([a-f0-9]{7,})\]') {
+        $commitHash = $matches[2]
+        Write-Host "Commit Hash: $commitHash" -ForegroundColor Green
+    } else {
+        # Fallback: try to get latest commit hash
+        try {
+            $commitHash = git rev-parse --short HEAD 2>$null
+            if ($commitHash) {
+                Write-Host "Commit Hash (fallback): $commitHash" -ForegroundColor Green
+            }
+        } catch {
+            Write-Host "Warning: Could not extract commit hash" -ForegroundColor Yellow
+        }
+    }
 }
 
 # Show branch information before push
