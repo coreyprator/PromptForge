@@ -633,3 +633,11 @@ after_construct: no root; postpone
 [2025-09-22 12:06:17] Theme color updated for project PromptForge: #880000
 [2025-09-22 12:06:17] Project loaded with theme: #880000
 [2025-09-22 12:06:27] Scenario saved: git_publish
+[2025-09-22 12:07:15] SESSION START - pf.state_theme/1.0.1 (SHA:097c1deb) project:PromptForge root:G:\My Drive\Code\Python\PromptForge
+[2025-09-22 12:07:15] Theme applied: background tinted #880000
+[2025-09-22 12:07:15] Badge placed via pack(side='right') with color #880000 on Frame
+[2025-09-22 12:07:15] Title stamped: │ 2025-09-22 12:07:15 │ pf.state_theme/1.0.1
+[2025-09-22 12:07:15] Scenario restored: git_publish
+[2025-09-22 12:07:15] Scenario persistence wired (trace_add)
+[2025-09-22 12:07:15] Project auto-open wired via trace_add to _project_open_selected()
+[2025-09-22 12:07:16] Theme color updated manually: #880000
