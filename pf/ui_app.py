@@ -74,7 +74,7 @@ class App(tk.Tk):
         self.txt_prose  = self._panel(left, "Prose B (human narrative)")
         self.txt_errors = self._panel(right, "Errors / Logs")
         self._attach_context_menu(self.txt_parsed); self._attach_context_menu(self.txt_prose); self._attach_context_menu(self.txt_errors)
-        self._log("Project root: " + str(self.project_root))
+        self._log(f'Project root: "{self.project_root}"')
         self._prose("Config loaded from .pf/project.json (if present). Auto-retry: " + ("on" if self.auto_retry else "off"))
 
         # Theme/State/Banner integration
@@ -224,6 +224,14 @@ class App(tk.Tk):
         """Handle scenario selection and save state."""
         self._save_persistent_state()
 
+    def _get_promptforge_scripts_dir(self) -> Path:
+        """Always return PromptForge's scripts directory, regardless of current project."""
+        # Find PromptForge installation directory
+        # This should be the directory containing the ui_app.py file
+        ui_app_file = Path(__file__).resolve()
+        promptforge_root = ui_app_file.parent.parent  # Go up from pf/ui_app.py to project root
+        return promptforge_root / "v2" / "scripts"
+
     # ---- project ----
     def _set_project_root(self, new_root: Path) -> None:
         new_root = new_root.resolve()
@@ -234,7 +242,7 @@ class App(tk.Tk):
         self.tools_dir    = self.project_root / "v2" / "tools"
         self.config_data  = load_project_config(self.project_root)
         self.auto_retry   = bool(self.config_data.get("retry_policy",{}).get("auto_retries",1))
-        self._refresh_scenarios(); self._log("Switched project → "+str(self.project_root))
+        self._refresh_scenarios(); self._log(f'Switched project → "{str(new_root)}"')
         self._prose("Project changed. Auto-retry: "+("on" if self.auto_retry else "off"))
         # Save state after project change
         self._save_persistent_state()
@@ -262,7 +270,10 @@ class App(tk.Tk):
         if not cfg.exists():
             starter = load_project_config(root); cfg.write_text(json.dumps(starter, indent=2, ensure_ascii=False), encoding="utf-8")
         try:
-            if not (root/"v2"/"scripts").exists() and self.scripts_dir.exists(): shutil.copytree(self.scripts_dir, root/"v2"/"scripts")
+            # Copy scenarios from PromptForge, not current project
+            promptforge_scripts = self._get_promptforge_scripts_dir()
+            if not (root/"v2"/"scripts").exists() and promptforge_scripts.exists(): 
+                shutil.copytree(promptforge_scripts, root/"v2"/"scripts")
         except Exception:
             (root/"v2"/"scripts").mkdir(parents=True, exist_ok=True)
         try:
@@ -357,22 +368,21 @@ class App(tk.Tk):
         standard_scenarios = [
             "app_selfcheck",
             "venv_validate", 
-            "setup_run_ui",
             "apply_freeform_paste_clipboard_run",
-            "standard_test_and_lint",
-            "tool_commands",
-            "standard_git_publish"
+            "launch_ui",
+            "git_publish"
         ]
         
         # Get project-specific scenarios from config
         sys_list = list(self.config_data.get("scenarios",{}).get("system",[]))
         proj_list = list(self.config_data.get("scenarios",{}).get("project",[]))
         
-        # Discover additional scenarios from scripts directory
+        # Discover additional scenarios from PromptForge scripts directory (not current project)
         discovered = []
         try:
-            if self.scripts_dir.exists():
-                for p in sorted(self.scripts_dir.glob("scenario_*.ps1")):
+            promptforge_scripts = self._get_promptforge_scripts_dir()
+            if promptforge_scripts.exists():
+                for p in sorted(promptforge_scripts.glob("scenario_*.ps1")):
                     name = p.stem.replace("scenario_","")
                     discovered.append(name)
         except Exception:
@@ -398,7 +408,9 @@ class App(tk.Tk):
         # Always try to restore scenario for current project (not just on startup)
         self._restore_scenario_selection()
 
-    def _scenario_script_for(self, name: str) -> Path: return self.scripts_dir / f"scenario_{name}.ps1"
+    def _scenario_script_for(self, name: str) -> Path:
+        """Get scenario script path from PromptForge directory, not current project."""
+        return self._get_promptforge_scripts_dir() / f"scenario_{name}.ps1"
 
     # ---- file actions ----
     def load_json(self) -> None:

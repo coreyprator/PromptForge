@@ -2,7 +2,7 @@ import json, re, shutil, subprocess
 from pathlib import Path
 
 URL_RE  = re.compile(r"(https?://\S+)")
-PATH_RE = re.compile(r'((?:[A-Za-z]:[\\/]|\\\\[^\s/\\:*?"<>|]+[\\/]|/)[^\r\n]+)')
+PATH_RE = re.compile(r"((?:[A-Za-z]:[\\/]|\\\\[^\s/\\:*?\"<>|]+[\\/]|/)[^\r\n]+)")
 TRAILING_JUNK_RE = re.compile(r"[)\]\}.,;'\"]+$")
 
 
