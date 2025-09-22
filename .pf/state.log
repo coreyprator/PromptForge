@@ -628,3 +628,8 @@ after_construct: no root; postpone
 [2025-09-22 12:03:35] Theme color updated for project PromptForge: #880000
 [2025-09-22 12:03:35] Project loaded with theme: #880000
 [2025-09-22 12:03:41] Scenario saved: git_publish
+[2025-09-22 12:06:11] Auto-opened project: G:\My Drive\Code\Python\cubist_art via _project_open_selected()
+[2025-09-22 12:06:17] Scenario saved: apply_freeform_paste_clipboard_run
+[2025-09-22 12:06:17] Theme color updated for project PromptForge: #880000
+[2025-09-22 12:06:17] Project loaded with theme: #880000
+[2025-09-22 12:06:27] Scenario saved: git_publish
