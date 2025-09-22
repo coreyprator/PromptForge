@@ -1,0 +1,198 @@
+{
+  "version": "2.4",
+  "last_updated": "2025-09-22T15:15:00Z",
+  "scenarios": {
+    "core": [
+      {
+        "id": "app_selfcheck",
+        "display_name": "App Self-Check",
+        "script_file": "scenario_app_selfcheck.ps1",
+        "category": "System",
+        "description": "Comprehensive PromptForge health check with registry validation",
+        "tooltip": "Validates installation, project config, scenario registry, and Python environment",
+        "parameters": ["ProjectRoot"],
+        "requires_project": false,
+        "eoodf_tested": true,
+        "last_tested": "2025-09-22",
+        "test_status": "PASS",
+        "documentation": "docs/scenarios/app_selfcheck.md"
+      },
+      {
+        "id": "git_publish",
+        "display_name": "Git Publish",
+        "script_file": "scenario_git_publish.ps1",
+        "category": "Git",
+        "description": "Enhanced git commit and push with detailed handoff information",
+        "tooltip": "Stages all changes, commits with timestamp, pushes to remote, provides commit hash and branch info",
+        "parameters": ["ProjectRoot"],
+        "requires_project": true,
+        "eoodf_tested": true,
+        "last_tested": "2025-09-22",
+        "test_status": "PASS",
+        "documentation": "docs/scenarios/git_publish.md"
+      },
+      {
+        "id": "apply_freeform_paste",
+        "display_name": "Apply Freeform Paste",
+        "script_file": "scenario_apply_freeform_paste.ps1",
+        "category": "Development",
+        "description": "Processes Channel-A JSON and file blocks from clipboard with enhanced logging",
+        "tooltip": "Reads clipboard, parses various formats (Channel-A JSON, >>>FILE blocks), applies to project with verbose output",
+        "parameters": ["ProjectRoot"],
+        "requires_project": true,
+        "eoodf_tested": true,
+        "last_tested": "2025-09-22",
+        "test_status": "PASS",
+        "documentation": "docs/scenarios/apply_freeform_paste.md"
+      },
+      {
+        "id": "project_status_comprehensive",
+        "display_name": "Project Status (Comprehensive)",
+        "script_file": "scenario_project_status_comprehensive.ps1",
+        "category": "Management",
+        "description": "Living document for sprint tracking with registry integration",
+        "tooltip": "Updates PROJECT_STATUS.md with git info, scenario registry status, testing progress",
+        "parameters": ["ProjectRoot"],
+        "requires_project": false,
+        "eoodf_tested": true,
+        "last_tested": "2025-09-22",
+        "test_status": "PASS",
+        "documentation": "docs/scenarios/project_status.md"
+      }
+    ],
+    "untested": [
+      {
+        "id": "venv_validate",
+        "display_name": "Environment Validation",
+        "script_file": "scenario_venv_validate.ps1",
+        "category": "System",
+        "description": "Validates Python 3.12+, ruff, PSScriptAnalyzer installation",
+        "tooltip": "Checks development environment requirements and tool availability",
+        "parameters": ["ProjectRoot"],
+        "requires_project": false,
+        "eoodf_tested": false,
+        "last_tested": "never",
+        "test_status": "UNTESTED",
+        "documentation": "docs/scenarios/venv_validate.md"
+      },
+      {
+        "id": "install_global_runui",
+        "display_name": "Install Global Run UI",
+        "script_file": "scenario_install_global_runui.ps1",
+        "category": "Installation",
+        "description": "Sets up global PromptForge UI access",
+        "tooltip": "Installs PromptForge for system-wide access from any directory",
+        "parameters": ["ProjectRoot"],
+        "requires_project": false,
+        "eoodf_tested": false,
+        "last_tested": "never",
+        "test_status": "UNTESTED",
+        "documentation": "docs/scenarios/install_global_runui.md"
+      },
+      {
+        "id": "runui_write_manifest",
+        "display_name": "Write UI Manifest",
+        "script_file": "scenario_runui_write_manifest.ps1",
+        "category": "Configuration",
+        "description": "Auto-generates .pf/runui.json manifest by detecting project type",
+        "tooltip": "Called automatically by install_global_runui - typically not run directly by users",
+        "parameters": ["ProjectRoot"],
+        "requires_project": false,
+        "eoodf_tested": false,
+        "last_tested": "never",
+        "test_status": "UNTESTED",
+        "documentation": "docs/scenarios/runui_write_manifest.md",
+        "notes": "Auto-called by install_global_runui, rarely used directly"
+      }
+    ],
+    "deprecated": [
+      {
+        "id": "project_status_update",
+        "display_name": "Project Status (Basic)",
+        "script_file": "scenario_project_status_update.ps1",
+        "category": "Management",
+        "description": "Basic project status - replaced by comprehensive version",
+        "tooltip": "Deprecated due to PowerShell errors and limited functionality",
+        "parameters": ["ProjectRoot"],
+        "requires_project": false,
+        "eoodf_tested": false,
+        "last_tested": "2025-09-22",
+        "test_status": "DEPRECATED",
+        "documentation": "docs/scenarios/project_status_update.md",
+        "notes": "Replaced by project_status_comprehensive",
+        "removal_target": "v2.5"
+      },
+      {
+        "id": "apply_freeform_paste_clipboard",
+        "display_name": "Apply Freeform Paste (Clipboard)",
+        "script_file": "scenario_apply_freeform_paste_clipboard.ps1",
+        "category": "Development",
+        "description": "Clipboard-specific paste processing - redundant",
+        "tooltip": "Redundant with main apply_freeform_paste scenario",
+        "parameters": ["ProjectRoot"],
+        "requires_project": true,
+        "eoodf_tested": false,
+        "last_tested": "never",
+        "test_status": "DEPRECATED",
+        "documentation": "docs/scenarios/apply_freeform_paste_clipboard.md",
+        "notes": "Functionality merged into apply_freeform_paste",
+        "removal_target": "v2.5"
+      },
+      {
+        "id": "pf_linkify_and_scenario_fallback",
+        "display_name": "PF Linkify & Fallback",
+        "script_file": "scenario_pf_linkify_and_scenario_fallback.ps1",
+        "category": "System",
+        "description": "Creates PromptForge links and fallback scenarios - redundant",
+        "tooltip": "Functionality absorbed by app_selfcheck",
+        "parameters": ["ProjectRoot"],
+        "requires_project": false,
+        "eoodf_tested": false,
+        "last_tested": "never",
+        "test_status": "DEPRECATED",
+        "documentation": "docs/scenarios/pf_linkify.md",
+        "notes": "Redundant with scenario_app_selfcheck",
+        "removal_target": "v2.5"
+      },
+      {
+        "id": "runui_debug_here",
+        "display_name": "Debug UI Here",
+        "script_file": "scenario_runui_debug_here.ps1",
+        "category": "Development",
+        "description": "Launches PromptForge UI in debug mode - should be flag",
+        "tooltip": "Should be implemented as -debug switch in runui instead of separate scenario",
+        "parameters": ["ProjectRoot"],
+        "requires_project": false,
+        "eoodf_tested": false,
+        "last_tested": "never",
+        "test_status": "DEPRECATED",
+        "documentation": "docs/scenarios/runui_debug_here.md",
+        "notes": "Should be -debug switch in runui, not separate scenario",
+        "removal_target": "v2.5"
+      }
+    ]
+  },
+  "categories": {
+    "System": {"description": "Core PromptForge functionality and validation", "color": "blue"},
+    "Git": {"description": "Version control operations", "color": "green"},
+    "Development": {"description": "Code and content management", "color": "orange"},
+    "Management": {"description": "Project and sprint tracking", "color": "purple"},
+    "Installation": {"description": "Setup and configuration", "color": "red"},
+    "Configuration": {"description": "System configuration tasks", "color": "gray"}
+  },
+  "test_status_definitions": {
+    "PASS": "Scenario works correctly with no errors",
+    "FAIL": "Scenario has confirmed errors or bugs",
+    "FIXING": "Scenario has known issues being addressed", 
+    "UNTESTED": "Scenario has not been tested yet",
+    "REVIEW_NEEDED": "Scenario needs evaluation for necessity",
+    "DEPRECATED": "Scenario marked for removal in next version"
+  },
+  "cleanup_summary": {
+    "core_scenarios": 4,
+    "untested_scenarios": 3,
+    "deprecated_scenarios": 4,
+    "cleanup_date": "2025-09-22",
+    "next_cleanup_target": "v2.5"
+  }
+}

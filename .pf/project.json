@@ -1,3 +1,20 @@
 {
-  "theme_color": "#880000"
+  "project_name": "PromptForge",
+  "description": "PromptForge V2.3 managed project",
+  "theme_color": "#880000",
+  "retry_policy": {
+    "auto_retries": 1
+  },
+  "standards": {
+    "validation_config": ".pf/validation_config.json",
+    "promptforge_version": "V2.3",
+    "updated": "2025-09-22",
+    "documentation": ".pf/STANDARDS.md",
+    "version": "1.0"
+  },
+  "scenarios": {
+    "project": [],
+    "system": []
+  },
+  "version": "1.0.0"
 }

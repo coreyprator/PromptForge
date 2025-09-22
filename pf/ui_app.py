@@ -232,6 +232,37 @@ class App(tk.Tk):
         promptforge_root = ui_app_file.parent.parent  # Go up from pf/ui_app.py to project root
         return promptforge_root / "v2" / "scripts"
 
+    def _load_scenario_registry(self):
+        """Load scenarios from registry system - MINIMAL SAFE VERSION."""
+        try:
+            registry_file = self.project_root / ".pf" / "scenario_registry.json"
+            if not registry_file.exists():
+                # Fallback to PromptForge installation registry
+                promptforge_root = Path(__file__).resolve().parent.parent
+                registry_file = promptforge_root / ".pf" / "scenario_registry.json"
+            
+            if registry_file.exists():
+                with open(registry_file, 'r', encoding='utf-8') as f:
+                    registry_data = json.load(f)
+                
+                # Get active scenarios (core + untested, NOT deprecated)
+                active_scenarios = []
+                
+                # Add core scenarios
+                for scenario in registry_data.get("scenarios", {}).get("core", []):
+                    active_scenarios.append(scenario["id"])
+                
+                # Add untested scenarios
+                for scenario in registry_data.get("scenarios", {}).get("untested", []):
+                    active_scenarios.append(scenario["id"])
+                
+                return sorted(active_scenarios)
+            
+        except Exception as e:
+            print(f"Registry load failed: {e}")
+        
+        return None
+
     # ---- project ----
     def _set_project_root(self, new_root: Path) -> None:
         new_root = new_root.resolve()
@@ -363,47 +394,56 @@ class App(tk.Tk):
 
     # ---- scenarios ----
     def _refresh_scenarios(self) -> None:
-        # Use consistent scenario list across all projects to avoid confusion
-        # Start with a standardized list
-        standard_scenarios = [
-            "app_selfcheck",
-            "venv_validate", 
-            "apply_freeform_paste_clipboard_run",
-            "launch_ui",
-            "git_publish"
-        ]
+        """Enhanced scenario discovery with registry support and fallbacks."""
         
-        # Get project-specific scenarios from config
-        sys_list = list(self.config_data.get("scenarios",{}).get("system",[]))
-        proj_list = list(self.config_data.get("scenarios",{}).get("project",[]))
-        
-        # Discover additional scenarios from PromptForge scripts directory (not current project)
-        discovered = []
-        try:
-            promptforge_scripts = self._get_promptforge_scripts_dir()
-            if promptforge_scripts.exists():
-                for p in sorted(promptforge_scripts.glob("scenario_*.ps1")):
-                    name = p.stem.replace("scenario_","")
-                    discovered.append(name)
-        except Exception:
-            pass
-        
-        # Combine all scenarios: standard + system + project + discovered, removing duplicates
-        all_scenarios = []
-        for scenario_list in [standard_scenarios, sys_list, proj_list, discovered]:
-            for scenario in scenario_list:
-                if scenario not in all_scenarios:
-                    all_scenarios.append(scenario)
-        
-        # Fallback to standard list if nothing found
-        if not all_scenarios:
-            all_scenarios = standard_scenarios
+        # Try registry first
+        registry_scenarios = self._load_scenario_registry()
+        if registry_scenarios:
+            self.scenario_combo["values"] = registry_scenarios
+            print(f"REGISTRY: Loaded {len(registry_scenarios)} active scenarios (excluding deprecated)")
+        else:
+            # Fallback to original logic with improvements
+            # Start with a standardized list
+            standard_scenarios = [
+                "app_selfcheck",
+                "venv_validate", 
+                "apply_freeform_paste",
+                "git_publish"
+            ]
             
-        self.scenario_combo["values"] = all_scenarios
+            # Get project-specific scenarios from config
+            sys_list = list(self.config_data.get("scenarios",{}).get("system",[]))
+            proj_list = list(self.config_data.get("scenarios",{}).get("project",[]))
+            
+            # Discover additional scenarios from PromptForge scripts directory (not current project)
+            discovered = []
+            try:
+                promptforge_scripts = self._get_promptforge_scripts_dir()
+                if promptforge_scripts.exists():
+                    for p in sorted(promptforge_scripts.glob("scenario_*.ps1")):
+                        name = p.stem.replace("scenario_","")
+                        discovered.append(name)
+            except Exception:
+                pass
+            
+            # Combine all scenarios: standard + system + project + discovered, removing duplicates
+            all_scenarios = []
+            for scenario_list in [standard_scenarios, sys_list, proj_list, discovered]:
+                for scenario in scenario_list:
+                    if scenario not in all_scenarios:
+                        all_scenarios.append(scenario)
+            
+            # Fallback to standard list if nothing found
+            if not all_scenarios:
+                all_scenarios = standard_scenarios
+                
+            self.scenario_combo["values"] = all_scenarios
+            print(f"FALLBACK: Using directory scan + config, found {len(all_scenarios)} scenarios")
         
         # Set default to first scenario if none selected
-        if not self.scenario_var.get() and all_scenarios:
-            self.scenario_var.set(all_scenarios[0])
+        current_values = list(self.scenario_combo["values"])
+        if not self.scenario_var.get() and current_values:
+            self.scenario_var.set(current_values[0])
         
         # Always try to restore scenario for current project (not just on startup)
         self._restore_scenario_selection()

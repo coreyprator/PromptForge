@@ -649,3 +649,98 @@ after_construct: no root; postpone
 [2025-09-22 12:22:49] Scenario persistence wired (trace_add)
 [2025-09-22 12:22:49] Project auto-open wired via trace_add to _project_open_selected()
 [2025-09-22 12:22:50] Theme color updated manually: #880000
+[2025-09-22 12:47:03] Scenario saved: apply_freeform_paste
+[2025-09-22 13:14:39] SESSION START - pf.state_theme/1.0.1 (SHA:097c1deb) project:PromptForge root:G:\My Drive\Code\Python\PromptForge
+[2025-09-22 13:14:39] Theme applied: background tinted #880000
+[2025-09-22 13:14:39] Badge placed via pack(side='right') with color #880000 on Frame
+[2025-09-22 13:14:39] Title stamped: │ 2025-09-22 13:14:39 │ pf.state_theme/1.0.1
+[2025-09-22 13:14:39] Scenario restored: apply_freeform_paste
+[2025-09-22 13:14:39] Scenario persistence wired (trace_add)
+[2025-09-22 13:14:39] Project auto-open wired via trace_add to _project_open_selected()
+[2025-09-22 13:14:40] Theme color updated manually: #880000
+[2025-09-22 13:14:46] Scenario saved: project_status_update
+[2025-09-22 13:19:49] Scenario saved: apply_freeform_paste
+[2025-09-22 13:22:22] SESSION START - pf.state_theme/1.0.1 (SHA:097c1deb) project:PromptForge root:G:\My Drive\Code\Python\PromptForge
+[2025-09-22 13:22:22] Theme applied: background tinted #880000
+[2025-09-22 13:22:22] Badge placed via pack(side='right') with color #880000 on Frame
+[2025-09-22 13:22:22] Title stamped: │ 2025-09-22 13:22:22 │ pf.state_theme/1.0.1
+[2025-09-22 13:22:22] Scenario restored: apply_freeform_paste
+[2025-09-22 13:22:22] Scenario persistence wired (trace_add)
+[2025-09-22 13:22:22] Project auto-open wired via trace_add to _project_open_selected()
+[2025-09-22 13:22:23] Theme color updated manually: #880000
+[2025-09-22 13:22:32] Scenario saved: project_status_comprehensive
+[2025-09-22 13:27:01] Scenario saved: apply_freeform_paste
+[2025-09-22 13:27:44] SESSION START - pf.state_theme/1.0.1 (SHA:097c1deb) project:PromptForge root:G:\My Drive\Code\Python\PromptForge
+[2025-09-22 13:27:44] Theme applied: background tinted #880000
+[2025-09-22 13:27:44] Badge placed via pack(side='right') with color #880000 on Frame
+[2025-09-22 13:27:44] Title stamped: │ 2025-09-22 13:27:44 │ pf.state_theme/1.0.1
+[2025-09-22 13:27:44] Scenario restored: apply_freeform_paste
+[2025-09-22 13:27:44] Scenario persistence wired (trace_add)
+[2025-09-22 13:27:44] Project auto-open wired via trace_add to _project_open_selected()
+[2025-09-22 13:27:44] Theme color updated manually: #880000
+[2025-09-22 13:27:51] Scenario saved: project_status_comprehensive
+[2025-09-22 13:28:33] Scenario saved: apply_freeform_paste
+[2025-09-22 13:28:54] Scenario saved: project_status_comprehensive
+[2025-09-22 14:09:15] Scenario saved: apply_freeform_paste
+[2025-09-22 14:26:30] Scenario saved: project_status_comprehensive
+[2025-09-22 14:29:20] Scenario saved: app_selfcheck
+[2025-09-22 14:32:42] Scenario saved: apply_freeform_paste
+[2025-09-22 14:33:25] Scenario saved: project_status_comprehensive
+[2025-09-22 15:02:13] Scenario saved: app_selfcheck
+[2025-09-22 15:06:09] Auto-opened project: G:\My Drive\Code\Python\cubist_art via _project_open_selected()
+[2025-09-22 15:06:22] Scenario saved: apply_freeform_paste
+[2025-09-22 15:10:29] Scenario saved: apply_freeform_paste
+[2025-09-22 15:10:29] Theme color updated for project PromptForge: #880000
+[2025-09-22 15:10:29] Project loaded with theme: #880000
+[2025-09-22 15:11:09] SESSION START - pf.state_theme/1.0.1 (SHA:097c1deb) project:PromptForge root:G:\My Drive\Code\Python\PromptForge
+[2025-09-22 15:11:09] Theme applied: background tinted #880000
+[2025-09-22 15:11:09] Badge placed via pack(side='right') with color #880000 on Frame
+[2025-09-22 15:11:09] Title stamped: │ 2025-09-22 15:11:09 │ pf.state_theme/1.0.1
+[2025-09-22 15:11:09] Scenario restored: apply_freeform_paste
+[2025-09-22 15:11:09] Scenario persistence wired (trace_add)
+[2025-09-22 15:11:09] Project auto-open wired via trace_add to _project_open_selected()
+[2025-09-22 15:11:10] Theme color updated manually: #880000
+[2025-09-22 15:19:25] Scenario saved: app_selfcheck
+[2025-09-22 15:38:33] Scenario saved: apply_freeform_paste
+[2025-09-22 15:52:12] SESSION START - pf.state_theme/1.0.1 (SHA:097c1deb) project:PromptForge root:G:\My Drive\Code\Python\PromptForge
+[2025-09-22 15:52:12] Theme applied: background tinted #880000
+[2025-09-22 15:52:12] Badge placed via pack(side='right') with color #880000 on Frame
+[2025-09-22 15:52:12] Title stamped: │ 2025-09-22 15:52:12 │ pf.state_theme/1.0.1
+[2025-09-22 15:52:12] Scenario restored: apply_freeform_paste
+[2025-09-22 15:52:12] Scenario persistence wired (trace_add)
+[2025-09-22 15:52:12] Project auto-open wired via trace_add to _project_open_selected()
+[2025-09-22 15:52:13] Theme color updated manually: #880000
+[2025-09-22 15:54:16] Scenario saved: project_status_comprehensive
+[2025-09-22 16:20:27] Scenario saved: apply_freeform_paste
+[2025-09-22 16:20:42] Auto-opened project: G:\My Drive\Code\Python\cubist_art via _project_open_selected()
+[2025-09-22 16:27:25] Scenario saved: app_selfcheck
+[2025-09-22 16:28:20] Scenario saved: project_status_comprehensive
+[2025-09-22 16:32:44] Scenario saved: apply_freeform_paste
+[2025-09-22 16:45:09] Scenario saved: apply_freeform_paste
+[2025-09-22 16:45:09] Theme color updated for project PromptForge: #880000
+[2025-09-22 16:45:10] Project loaded with theme: #880000
+[2025-09-22 16:45:15] Auto-opened project: G:\My Drive\Code\Python\cubist_art via _project_open_selected()
+[2025-09-22 16:52:55] Scenario saved: apply_freeform_paste
+[2025-09-22 16:52:55] Theme color updated for project PromptForge: #880000
+[2025-09-22 16:52:55] Project loaded with theme: #880000
+[2025-09-22 16:53:46] Auto-opened project: G:\My Drive\Code\Python\cubist_art via _project_open_selected()
+[2025-09-22 18:19:56] Theme color updated for project PromptForge: #880000
+[2025-09-22 18:19:56] Project loaded with theme: #880000
+[2025-09-22 18:19:57] Project loaded with theme: #880000
+[2025-09-22 18:33:15] SESSION START - pf.state_theme/1.0.1 (SHA:097c1deb) project:PromptForge root:G:\My Drive\Code\Python\PromptForge
+[2025-09-22 18:33:15] Theme applied: background tinted #880000
+[2025-09-22 18:33:16] Badge placed via pack(side='right') with color #880000 on Frame
+[2025-09-22 18:33:16] Title stamped: │ 2025-09-22 18:33:16 │ pf.state_theme/1.0.1
+[2025-09-22 18:33:16] Scenario restored: apply_freeform_paste
+[2025-09-22 18:33:16] Scenario persistence wired (trace_add)
+[2025-09-22 18:33:16] Project auto-open wired via trace_add to _project_open_selected()
+[2025-09-22 18:33:17] Theme color updated manually: #880000
+[2025-09-22 18:33:34] SESSION START - pf.state_theme/1.0.1 (SHA:097c1deb) project:PromptForge root:G:\My Drive\Code\Python\PromptForge
+[2025-09-22 18:33:34] Theme applied: background tinted #880000
+[2025-09-22 18:33:34] Badge placed via pack(side='right') with color #880000 on Frame
+[2025-09-22 18:33:34] Title stamped: │ 2025-09-22 18:33:34 │ pf.state_theme/1.0.1
+[2025-09-22 18:33:34] Scenario restored: apply_freeform_paste
+[2025-09-22 18:33:34] Scenario persistence wired (trace_add)
+[2025-09-22 18:33:34] Project auto-open wired via trace_add to _project_open_selected()
+[2025-09-22 18:33:35] Theme color updated manually: #880000
+[2025-09-22 18:33:47] Scenario saved: git_publish

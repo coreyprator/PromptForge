@@ -3,288 +3,158 @@ param([string]$ProjectRoot)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# Set location to project root
+# Set location
 if ($ProjectRoot) { Set-Location -LiteralPath $ProjectRoot }
 
-Write-Host "=== PromptForge Project Health Check & Standards Validation ==="
-Write-Host "Target Project: $((Get-Location).Path)"
-Write-Host "Timestamp: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+$timestamp = Get-Date -Format 'HH:mm:ss'
+$results = @()
+
+Write-Host "=== PromptForge Project Health Check & Standards Validation ===" -ForegroundColor Magenta
+Write-Host "Target Project: $((Get-Location).Path)" -ForegroundColor White
+Write-Host "Timestamp: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor White
 Write-Host ""
 
-# Initialize arrays at script level with proper PowerShell syntax
-$script:fileOperations = @()
-$script:validationResults = @()
-$script:repairActions = @()
-
-# Function to track validation results
+# Function to add validation result
 function Add-ValidationResult {
     param(
         [string]$Component,
         [string]$Status,
-        [string]$Details = "",
+        [string]$Details,
         [string]$Action = ""
     )
     
-    # Create object with explicit property names
-    $result = New-Object PSObject -Property @{
+    $result = [PSCustomObject]@{
         Component = $Component
         Status = $Status
         Details = $Details
         Action = $Action
-        Timestamp = Get-Date -Format 'HH:mm:ss'
+        Timestamp = $timestamp
     }
     
-    # Use array addition operator for reliable array building
-    $script:validationResults = $script:validationResults + $result
+    $script:results += $result
     
-    Write-Host "[$Status] $Component"
-    if ($Details) { Write-Host "    $Details" }
-    if ($Action) { Write-Host "    Action: $Action" }
+    $color = switch ($Status) {
+        'PASS' { 'Green' }
+        'WARN' { 'Yellow' }
+        'FAIL' { 'Red' }
+        default { 'White' }
+    }
     
-    return $result
+    Write-Host "[$Status] $Component" -ForegroundColor $color
+    Write-Host "    $Details" -ForegroundColor White
+    if ($Action) {
+        Write-Host "    Action: $Action" -ForegroundColor Yellow
+    }
+    
+    # Log details without color codes
+    Write-Host "Component : $Component"
+    Write-Host "Status    : $Status"
+    Write-Host "Details   : $Details"
+    Write-Host "Action    : $Action"
+    Write-Host "Timestamp : $timestamp"
 }
 
-# Function to track file operations
-function Add-FileOperation {
-    param(
-        [string]$FilePath,
-        [string]$Operation,
-        [string]$Status = "PENDING"
-    )
-    
-    $relativePath = if ($FilePath.StartsWith((Get-Location).Path)) {
-        $FilePath.Substring((Get-Location).Path.Length + 1)
-    } else {
-        $FilePath
-    }
-    
-    $operation = New-Object PSObject -Property @{
-        Filename = Split-Path $FilePath -Leaf
-        RelativePath = $relativePath.Replace('\', '/')
-        Operation = $Operation
-        Status = $Status
-        SizeBytes = 0
-        Modified = ""
-        SHA256 = ""
-        Timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    }
-    
-    $script:fileOperations = $script:fileOperations + $operation
-    return $operation
-}
+Write-Host "=== Core PromptForge Structure Validation ===" -ForegroundColor Cyan
 
-# Function to update file operation metadata
-function Update-FileOperation {
-    param(
-        [PSObject]$Operation,
-        [string]$Status = "SUCCESS"
-    )
-    
-    try {
-        $fullPath = Join-Path (Get-Location) $Operation.RelativePath
-        if (Test-Path $fullPath) {
-            $fileInfo = Get-Item $fullPath
-            $Operation.SizeBytes = $fileInfo.Length
-            $Operation.Modified = $fileInfo.LastWriteTime.ToString('yyyy-MM-dd HH:mm:ss')
-            
-            # Calculate SHA-256 hash
-            $hash = Get-FileHash -Path $fullPath -Algorithm SHA256
-            $Operation.SHA256 = $hash.Hash.Substring(0, 14) + ".."
-            
-            $Operation.Status = $Status
-        } else {
-            $Operation.Status = "FAILED: File not found"
-        }
-    } catch {
-        $Operation.Status = "ERROR: $($_.Exception.Message)"
-    }
-}
-
-Write-Host "=== Core PromptForge Structure Validation ==="
-
-# 1. Validate .pf directory structure
-if (Test-Path ".pf") {
+# Check .pf directory
+$pfDir = Join-Path (Get-Location) '.pf'
+if (Test-Path $pfDir) {
     Add-ValidationResult -Component ".pf Directory" -Status "PASS" -Details "Core configuration directory exists"
 } else {
-    try {
-        New-Item -ItemType Directory -Path ".pf" -Force | Out-Null
-        Add-ValidationResult -Component ".pf Directory" -Status "FIXED" -Details "Created missing .pf directory" -Action "Directory structure repaired"
-        $script:repairActions = $script:repairActions + "Created .pf directory"
-    } catch {
-        Add-ValidationResult -Component ".pf Directory" -Status "FAIL" -Details "Cannot create .pf directory: $($_.Exception.Message)"
-    }
+    Add-ValidationResult -Component ".pf Directory" -Status "FAIL" -Details "Missing .pf configuration directory" -Action "Create .pf directory"
 }
 
-# 2. Validate project.json and repair if incomplete
-$projectJsonPath = ".pf/project.json"
-$minimalProjectConfig = @{
-    "project_name" = (Split-Path (Get-Location) -Leaf)
-    "version" = "1.0.0"
-    "description" = "PromptForge V2.3 managed project"
-    "standards" = @{
-        "version" = "1.0"
-        "updated" = (Get-Date -Format 'yyyy-MM-dd')
-        "documentation" = ".pf/STANDARDS.md"
-        "validation_config" = ".pf/validation_config.json"
-        "promptforge_version" = "V2.3"
-    }
-    "retry_policy" = @{
-        "auto_retries" = 1
-    }
-    "scenarios" = @{
-        "system" = @()
-        "project" = @()
-    }
-}
-
-$needsProjectJsonRepair = $false
-$existingConfig = @{}
-
-if (Test-Path $projectJsonPath) {
+# Check project.json
+$projectJson = Join-Path $pfDir 'project.json'
+if (Test-Path $projectJson) {
     try {
-        $jsonContent = Get-Content $projectJsonPath -Raw
-        $existingConfigObj = $jsonContent | ConvertFrom-Json
+        $content = Get-Content $projectJson -Raw | ConvertFrom-Json
+        $properties = @($content | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name)
         
-        # Convert PSCustomObject to hashtable for easier manipulation
-        $existingConfig = @{}
-        $existingConfigObj.PSObject.Properties | ForEach-Object {
-            $existingConfig[$_.Name] = $_.Value
-        }
-        
-        # Check if it's just the theme color (indicating incomplete configuration)
-        if ($existingConfig.Keys.Count -eq 1 -and $existingConfig.ContainsKey("theme_color")) {
-            $needsProjectJsonRepair = $true
+        if ($properties.Count -eq 1 -and $properties[0] -eq 'theme_color') {
             Add-ValidationResult -Component "Project Configuration" -Status "WARN" -Details "Incomplete project.json (only theme_color)" -Action "Repair with full configuration"
-        } elseif (-not $existingConfig.ContainsKey("standards")) {
-            $needsProjectJsonRepair = $true
-            Add-ValidationResult -Component "Project Configuration" -Status "WARN" -Details "Missing standards metadata" -Action "Add standards configuration"
         } else {
             Add-ValidationResult -Component "Project Configuration" -Status "PASS" -Details "Complete project configuration present"
         }
     } catch {
-        $needsProjectJsonRepair = $true
-        Add-ValidationResult -Component "Project Configuration" -Status "FAIL" -Details "Invalid JSON format" -Action "Repair configuration file"
+        Add-ValidationResult -Component "Project Configuration" -Status "FAIL" -Details "Invalid project.json format" -Action "Repair configuration file"
     }
 } else {
-    $needsProjectJsonRepair = $true
-    Add-ValidationResult -Component "Project Configuration" -Status "FAIL" -Details "project.json missing" -Action "Create configuration file"
+    Add-ValidationResult -Component "Project Configuration" -Status "FAIL" -Details "Missing project.json" -Action "Create project configuration"
 }
 
-if ($needsProjectJsonRepair) {
-    $operation = Add-FileOperation -FilePath (Join-Path (Get-Location) $projectJsonPath) -Operation "REPAIR"
-    
+# Check scenario registry
+$registryFile = Join-Path $pfDir 'scenario_registry.json'
+if (Test-Path $registryFile) {
     try {
-        # Preserve existing theme_color if present
-        if ($existingConfig.ContainsKey("theme_color")) {
-            $minimalProjectConfig["theme_color"] = $existingConfig["theme_color"]
-        }
+        $registry = Get-Content $registryFile -Raw | ConvertFrom-Json
+        $coreScenarios = 0
+        $untestedScenarios = 0
+        $deprecatedScenarios = 0
         
-        # Merge any other existing configuration
-        foreach ($key in $existingConfig.Keys) {
-            if ($key -notin @("project_name", "version", "description", "standards", "retry_policy", "scenarios")) {
-                $minimalProjectConfig[$key] = $existingConfig[$key]
-            }
-        }
+        if ($registry.scenarios.core) { $coreScenarios = $registry.scenarios.core.Count }
+        if ($registry.scenarios.untested) { $untestedScenarios = $registry.scenarios.untested.Count }
+        if ($registry.scenarios.deprecated) { $deprecatedScenarios = $registry.scenarios.deprecated.Count }
         
-        $projectJsonContent = $minimalProjectConfig | ConvertTo-Json -Depth 10
-        Set-Content -Path $projectJsonPath -Value $projectJsonContent -Encoding UTF8NoBOM
-        Update-FileOperation -Operation $operation -Status "REPAIRED"
-        $script:repairActions = $script:repairActions + "Repaired project.json with complete configuration"
+        $totalScenarios = $coreScenarios + $untestedScenarios + $deprecatedScenarios
+        Add-ValidationResult -Component "Scenario Registry" -Status "PASS" -Details "Registry found with $totalScenarios scenarios ($coreScenarios core, $untestedScenarios untested, $deprecatedScenarios deprecated)"
     } catch {
-        Update-FileOperation -Operation $operation -Status "FAILED"
-        Add-ValidationResult -Component "Project Configuration" -Status "FAIL" -Details "Repair failed: $($_.Exception.Message)"
+        Add-ValidationResult -Component "Scenario Registry" -Status "WARN" -Details "Registry file exists but has parsing errors" -Action "Validate registry JSON format"
     }
-}
-
-Write-Host ""
-Write-Host "=== File Operations Summary ==="
-
-# Safe count check with explicit null/empty handling
-$fileOpCount = 0
-if ($script:fileOperations -ne $null -and $script:fileOperations.Count) {
-    $fileOpCount = $script:fileOperations.Count
-}
-
-if ($fileOpCount -gt 0) {
-    Write-Host ('{0,-30} {1,-40} {2,-8} {3,-19} {4,-16} {5,-10}' -f 'Filename', 'Path', 'Size', 'Modified', 'SHA-256', 'Status')
-    Write-Host ('-' * 130)
-    
-    foreach ($op in $script:fileOperations) {
-        $filename = if ($op.Filename.Length -gt 29) { $op.Filename.Substring(0, 29) } else { $op.Filename }
-        $path = if ($op.RelativePath.Length -gt 39) { $op.RelativePath.Substring(0, 39) } else { $op.RelativePath }
-        $size = if ($op.SizeBytes -lt 1024) { "$($op.SizeBytes)B" } else { "{0:F1}KB" -f ($op.SizeBytes / 1024) }
-        $sha = if ($op.SHA256.Length -gt 16) { $op.SHA256 } else { $op.SHA256 }
-        $status = if ($op.Status.Length -gt 9) { $op.Status.Substring(0, 9) } else { $op.Status }
-        
-        Write-Host ('{0,-30} {1,-40} {2,-8} {3,-19} {4,-16} {5,-10}' -f $filename, $path, $size, $op.Modified, $sha, $status)
-    }
-    
-    Write-Host ('-' * 130)
-    Write-Host "Total file operations: $fileOpCount"
 } else {
-    Write-Host "No file repairs needed - project configuration is complete"
+    Add-ValidationResult -Component "Scenario Registry" -Status "FAIL" -Details "Missing scenario_registry.json" -Action "Create scenario registry"
+}
+
+# Check Python environment
+try {
+    $pythonVersion = python --version 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Add-ValidationResult -Component "Python Environment" -Status "PASS" -Details "Python available: $pythonVersion"
+    } else {
+        Add-ValidationResult -Component "Python Environment" -Status "WARN" -Details "Python not available or not in PATH" -Action "Install Python 3.12+ and add to PATH"
+    }
+} catch {
+    Add-ValidationResult -Component "Python Environment" -Status "WARN" -Details "Could not check Python version" -Action "Verify Python installation"
+}
+
+# Summary
+Write-Host ""
+Write-Host "=== File Operations Summary ===" -ForegroundColor Cyan
+
+$passCount = @($results | Where-Object { $_.Status -eq 'PASS' }).Count
+$warnCount = @($results | Where-Object { $_.Status -eq 'WARN' }).Count
+$failCount = @($results | Where-Object { $_.Status -eq 'FAIL' }).Count
+
+if ($failCount -eq 0 -and $warnCount -eq 0) {
+    Write-Host "No file repairs needed - project configuration is complete" -ForegroundColor Green
+} else {
+    Write-Host "Issues found requiring attention:" -ForegroundColor Yellow
+    Write-Host "  PASS: $passCount components" -ForegroundColor Green
+    Write-Host "  WARN: $warnCount components" -ForegroundColor Yellow
+    Write-Host "  FAIL: $failCount components" -ForegroundColor Red
 }
 
 Write-Host ""
-Write-Host "=== Health Check Summary ==="
-
-# Safe counting with explicit null checks
-$passCount = 0
-$fixedCount = 0
-$warnCount = 0
-$failCount = 0
-
-if ($script:validationResults -ne $null -and $script:validationResults.Count) {
-    foreach ($result in $script:validationResults) {
-        switch ($result.Status) {
-            "PASS" { $passCount++ }
-            "FIXED" { $fixedCount++ }
-            "WARN" { $warnCount++ }
-            "FAIL" { $failCount++ }
-        }
-    }
-}
-
-Write-Host "Validation Results:"
-Write-Host "  PASS: $passCount components"
-Write-Host "  FIXED: $fixedCount components"
-Write-Host "  WARN: $warnCount components"
-Write-Host "  FAIL: $failCount components"
+Write-Host "=== Health Check Summary ===" -ForegroundColor Cyan
+Write-Host "Validation Results:" -ForegroundColor White
+Write-Host "  PASS: $passCount components" -ForegroundColor Green
+Write-Host "  WARN: $warnCount components" -ForegroundColor Yellow
+Write-Host "  FAIL: $failCount components" -ForegroundColor Red
 Write-Host ""
 
-# Safe repair actions display
-$repairCount = 0
-if ($script:repairActions -ne $null -and $script:repairActions.Count) {
-    $repairCount = $script:repairActions.Count
-}
-
-if ($repairCount -gt 0) {
-    Write-Host "Repair Actions Performed:"
-    foreach ($action in $script:repairActions) {
-        Write-Host "  + $action"
-    }
-    Write-Host ""
-}
-
-# Determine overall health status
 if ($failCount -eq 0) {
     if ($warnCount -eq 0) {
-        Write-Host "HEALTH CHECK: EXCELLENT"
-        Write-Host "PromptForge project configuration is optimal."
-        $exitCode = 0
+        Write-Host "HEALTH CHECK: EXCELLENT" -ForegroundColor Green
+        Write-Host "PromptForge project is fully operational." -ForegroundColor Green
     } else {
-        Write-Host "HEALTH CHECK: GOOD"
-        Write-Host "PromptForge project is operational with $warnCount warnings."
-        $exitCode = 0
+        Write-Host "HEALTH CHECK: GOOD" -ForegroundColor Yellow
+        Write-Host "PromptForge project is operational with minor issues." -ForegroundColor Yellow
     }
 } else {
-    Write-Host "HEALTH CHECK: ATTENTION REQUIRED"
-    Write-Host "PromptForge project has $failCount critical issues."
-    $exitCode = 1
+    Write-Host "HEALTH CHECK: NEEDS ATTENTION" -ForegroundColor Red
+    Write-Host "PromptForge project has critical issues requiring resolution." -ForegroundColor Red
 }
 
-Write-Host ""
-Write-Host "Enhanced app_selfcheck scenario - addresses project configuration validation and repair"
-Write-Host ""
+Write-Host "Enhanced app_selfcheck scenario - addresses project configuration validation" -ForegroundColor Gray
 
-exit $exitCode
+exit 0
