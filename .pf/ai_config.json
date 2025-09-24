@@ -1,0 +1,9 @@
+# .pf/ai_config.json
+   {
+     "default_provider": "mock",
+     "providers": {
+       "anthropic": {"model": "claude-3-sonnet-20240229"},
+       "openai": {"model": "gpt-4"},
+       "mock": {"mock_responses": []}
+     }
+   }

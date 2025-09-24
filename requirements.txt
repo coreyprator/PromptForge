@@ -1,0 +1,24 @@
+# PromptForge V2.5 Dependencies
+# Core functionality
+requests>=2.31.0
+psutil>=5.9.0
+
+# Development and validation
+ruff>=0.1.0
+pytest>=7.4.0
+
+# File processing
+pillow>=10.0.0
+markdown>=3.5.0
+
+# Data handling
+jsonschema>=4.17.0
+pyyaml>=6.0.0
+
+# AI Integration (V2.5 features - uncomment when implementing)
+# anthropic>=0.7.0
+# openai>=1.0.0
+
+# Optional: Enhanced development tools
+# jupyter>=1.0.0
+# ipython>=8.0.0

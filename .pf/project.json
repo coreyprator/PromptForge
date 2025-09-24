@@ -1,0 +1,33 @@
+{
+  "name": "PromptForge_V2.5",
+  "version": "1.0.0",
+  "description": "PromptForge V2.5 - Integrated AI Bridge Architecture",
+  "created": "2025-09-22 23:02:03",
+  "parent_version": "2.4",
+  "theme_color": "#004499",
+  "features": [
+    "Integrated AI Communication",
+    "One-Click Scenario Execution",
+    "AI-Enhanced Next Step Handling",
+    "Unified Interface Design"
+  ],
+  "retry_policy": {
+    "auto_retries": 1,
+    "max_retries": 3
+  },
+  "scenarios": {
+    "system": [],
+    "project": []
+  },
+  "ui": {
+    "theme": "default",
+    "layout": "multi-pane"
+  },
+  "standards": {
+    "validation_config": ".pf/validation_config.json",
+    "promptforge_version": "V2.5",
+    "updated": "2025-09-22",
+    "documentation": ".pf/STANDARDS.md",
+    "version": "1.0"
+  }
+}
